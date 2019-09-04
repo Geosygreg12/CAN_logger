@@ -30,41 +30,37 @@
         {
             this.DirText = new System.Windows.Forms.TextBox();
             this.BrowseButton = new System.Windows.Forms.Button();
-            this.TimesComboBox = new System.Windows.Forms.ComboBox();
             this.singleRadio = new System.Windows.Forms.RadioButton();
             this.tillEndRadio = new System.Windows.Forms.RadioButton();
             this.radioPanel = new System.Windows.Forms.Panel();
             this.startButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
+            this.timeText = new System.Windows.Forms.TextBox();
+            this.timeSearchButton = new System.Windows.Forms.Button();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.radioPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // DirText
             // 
+            this.DirText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.DirText.Location = new System.Drawing.Point(29, 45);
             this.DirText.Name = "DirText";
-            this.DirText.Size = new System.Drawing.Size(596, 22);
+            this.DirText.Size = new System.Drawing.Size(627, 27);
             this.DirText.TabIndex = 0;
             this.DirText.Text = "Enter the directory of the log file here";
+            this.DirText.TextChanged += new System.EventHandler(this.DirText_TextChanged);
+            this.DirText.KeyDown += new System.Windows.Forms.KeyEventHandler(this.DirText_KeyDown);
             // 
             // BrowseButton
             // 
-            this.BrowseButton.Location = new System.Drawing.Point(655, 38);
+            this.BrowseButton.Location = new System.Drawing.Point(682, 36);
             this.BrowseButton.Name = "BrowseButton";
-            this.BrowseButton.Size = new System.Drawing.Size(98, 36);
+            this.BrowseButton.Size = new System.Drawing.Size(98, 39);
             this.BrowseButton.TabIndex = 1;
             this.BrowseButton.Text = "Browse";
             this.BrowseButton.UseVisualStyleBackColor = true;
             this.BrowseButton.Click += new System.EventHandler(this.BrowseButton_Click);
-            // 
-            // TimesComboBox
-            // 
-            this.TimesComboBox.FormattingEnabled = true;
-            this.TimesComboBox.Location = new System.Drawing.Point(29, 105);
-            this.TimesComboBox.Name = "TimesComboBox";
-            this.TimesComboBox.Size = new System.Drawing.Size(248, 24);
-            this.TimesComboBox.TabIndex = 2;
-            this.TimesComboBox.Text = "Select the time to start";
             // 
             // singleRadio
             // 
@@ -80,7 +76,8 @@
             // tillEndRadio
             // 
             this.tillEndRadio.AutoSize = true;
-            this.tillEndRadio.Location = new System.Drawing.Point(167, 14);
+            this.tillEndRadio.Checked = true;
+            this.tillEndRadio.Location = new System.Drawing.Point(3, 72);
             this.tillEndRadio.Name = "tillEndRadio";
             this.tillEndRadio.Size = new System.Drawing.Size(167, 21);
             this.tillEndRadio.TabIndex = 4;
@@ -92,38 +89,61 @@
             // 
             this.radioPanel.Controls.Add(this.singleRadio);
             this.radioPanel.Controls.Add(this.tillEndRadio);
-            this.radioPanel.Location = new System.Drawing.Point(339, 94);
+            this.radioPanel.Location = new System.Drawing.Point(564, 123);
             this.radioPanel.Name = "radioPanel";
-            this.radioPanel.Size = new System.Drawing.Size(346, 51);
+            this.radioPanel.Size = new System.Drawing.Size(196, 129);
             this.radioPanel.TabIndex = 7;
             // 
             // startButton
             // 
-            this.startButton.Location = new System.Drawing.Point(29, 207);
+            this.startButton.Location = new System.Drawing.Point(33, 337);
             this.startButton.Name = "startButton";
             this.startButton.Size = new System.Drawing.Size(123, 62);
             this.startButton.TabIndex = 8;
             this.startButton.Text = "START";
             this.startButton.UseVisualStyleBackColor = true;
+            this.startButton.Click += new System.EventHandler(this.StartButton_Click);
             // 
             // stopButton
             // 
-            this.stopButton.Location = new System.Drawing.Point(210, 207);
+            this.stopButton.Location = new System.Drawing.Point(214, 337);
             this.stopButton.Name = "stopButton";
             this.stopButton.Size = new System.Drawing.Size(123, 62);
             this.stopButton.TabIndex = 9;
             this.stopButton.Text = "STOP";
             this.stopButton.UseVisualStyleBackColor = true;
+            this.stopButton.Click += new System.EventHandler(this.StopButton_Click);
+            // 
+            // timeText
+            // 
+            this.timeText.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.timeText.Location = new System.Drawing.Point(29, 166);
+            this.timeText.Name = "timeText";
+            this.timeText.Size = new System.Drawing.Size(284, 27);
+            this.timeText.TabIndex = 10;
+            this.timeText.Text = "Enter the time in seconds";
+            this.timeText.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TimeText_KeyDown);
+            // 
+            // timeSearchButton
+            // 
+            this.timeSearchButton.Location = new System.Drawing.Point(319, 162);
+            this.timeSearchButton.Name = "timeSearchButton";
+            this.timeSearchButton.Size = new System.Drawing.Size(75, 37);
+            this.timeSearchButton.TabIndex = 11;
+            this.timeSearchButton.Text = "Search";
+            this.timeSearchButton.UseVisualStyleBackColor = true;
+            this.timeSearchButton.Click += new System.EventHandler(this.TimeSearchButton_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(944, 686);
+            this.Controls.Add(this.timeSearchButton);
+            this.Controls.Add(this.timeText);
             this.Controls.Add(this.stopButton);
             this.Controls.Add(this.startButton);
             this.Controls.Add(this.radioPanel);
-            this.Controls.Add(this.TimesComboBox);
             this.Controls.Add(this.BrowseButton);
             this.Controls.Add(this.DirText);
             this.MaximumSize = new System.Drawing.Size(962, 733);
@@ -141,14 +161,17 @@
 
         private System.Windows.Forms.TextBox DirText;
         private System.Windows.Forms.Button BrowseButton;
-        private System.Windows.Forms.WebBrowser webBrowser;
-        private System.Object obj;
-        private System.Windows.Forms.ComboBox TimesComboBox;
         private System.Windows.Forms.RadioButton singleRadio;
         private System.Windows.Forms.RadioButton tillEndRadio;
         private System.Windows.Forms.Panel radioPanel;
         private System.Windows.Forms.Button startButton;
         private System.Windows.Forms.Button stopButton;
+        private System.Collections.Generic.List<string> listOfLoggedValues = new System.Collections.Generic.List<string>();
+        private System.Windows.Forms.TextBox timeText;
+        private System.Windows.Forms.Button timeSearchButton;
+        private System.String startTime = string.Empty;
+        private System.Text.RegularExpressions.Regex regexTime = new System.Text.RegularExpressions.Regex(@"^\d.\d\d\d\d\d\d");
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 
