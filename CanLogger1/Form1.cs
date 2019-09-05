@@ -27,11 +27,14 @@ namespace CanLogger1
             {
                 using (OpenFileDialog openFileDialog = new OpenFileDialog())
                 {
-                    openFileDialog.FilterIndex = 1;
-                    openFileDialog.Filter = "ASC file (*.asc) | *.asc| Text file (*.txt) | *.txt ";
+                    openFileDialog.FilterIndex = 1; // the number of files that can be selected at a time
+
+                    //the only formats that are supported .asc files and .txt files
+                    openFileDialog.Filter = "ASC file (*.asc) | *.asc|Text file (*.txt) | *.txt ";
 
                     if (openFileDialog.ShowDialog() == DialogResult.OK)
                     {
+                        //make the textbox text to be the name of the directory of the log file
                         DirText.Text = openFileDialog.FileName;
                     }
                 }
@@ -42,40 +45,57 @@ namespace CanLogger1
             }            
         }
 
-        private void TimesComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void DirText_KeyDown(object sender, KeyEventArgs e)
         {
+            //enter is pressed after entering the directory text then focus on the next textbox
+            if (e.KeyCode == Keys.Enter) timeText.Focus();
+        }
 
+        private void DirText_TextChanged(object sender, EventArgs e)
+        {
+            // if text change is true, delete previous list of can messages so new ones can be populated
+            listOfLoggedValues.Clear();
         }
 
         private void StartButton_Click(object sender, EventArgs e)
         {
-            bool isRead = false;
-            if (!(listOfLoggedValues.Count > 0))
-            {
-                isRead = readFile();
-            } 
-            if(isRead) MessageBox.Show("Transmission has started!");
+             //isRead is a variable that reflects whether the file was read successfully
+
+            if (!backgroundWorker1.IsBusy)
+                backgroundWorker1.RunWorkerAsync();
+            else MessageBox.Show("Press the stop button first to stop previous transmissions and Start again", "Message");
+
+            if (isRead) MessageBox.Show("Transmission has started!");
+
         }
 
         private void StopButton_Click(object sender, EventArgs e)
         {
-
+            if (backgroundWorker1.IsBusy)
+            {
+                backgroundWorker1.CancelAsync();
+                MessageBox.Show("Transmission has stopped!", "Message");
+            }else MessageBox.Show("There is no ongoing transmission to stop!", "Message",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-
-        private void DirText_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter) timeText.Focus();
-        }
-
         private void TimeSearchButton_Click(object sender, EventArgs e)
         {
             /**
              * TODO::
              * make the textbox show the time it started if time exist or message box for wrong time
             and textbox text show the default message. **/
-
-            readFile();
-            startTime = timeText.Text;
+            if (isRead)
+            {
+                //if time exists! -CONDITION WILL NOT NECESSARY BE ISREAD!!!!!!
+                //Let the name of the textbox be the time chosen
+                startTime = timeText.Text;
+            }
+            else
+            {
+                //display a textbox showing that time is wrong and user should pick another time
+                MessageBox.Show("The time you picked does not exist in " +
+                                "this log kindly pick another time. \nThank you", "Message");
+            }
         }
 
         //if the user presses enter after inputing start time
@@ -87,41 +107,59 @@ namespace CanLogger1
                 StartButton_Click(sender, e);
             }
         }
-
-        private bool readFile()
+      
+        private void readAndTransmitFile()
         {
-            regexTime = new Regex(@"^\d.\d\d\d\d\d\d");
+            //THIS METHOD NEEDS TO BE MODIFIED TO TRANSMIT THE LOG FILE
+            //format how the time column is written in the log file
             try
             {
                 if (File.Exists(DirText.Text))
                 {
                     using (StreamReader streamReader = new StreamReader(DirText.Text, Encoding.ASCII))
                     {
+                        isRead = true;
+
                         while (!streamReader.EndOfStream)
                         {
+                            //add each row in the log file to the list
                             listOfLoggedValues.Add(streamReader.ReadLine());
                         }
                     }
                 }
                 else
                 {
-                    MessageBox.Show("Wrong Directory! Try Again");
-                    return false;
+                    MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    isRead = false;
                 }
             }
             catch (Exception exception)
             {
                 Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
-                return false;
+                isRead = false;
             }
 
-            return true;
+            RegexMethod();
         }
 
-        private void DirText_TextChanged(object sender, EventArgs e)
+        private DataParameters RegexMethod()
         {
-            // if text change is true, delete previous list of can messages
-            listOfLoggedValues.Clear();
+            DataParameters dataParameters;
+            dataParameters.CAN_Message = string.Empty;
+            dataParameters.Channel_ID = string.Empty;
+            dataParameters.Message_Length = 0;
+            dataParameters.Message_Time = 0;
+
+            regexTime = new Regex(@"\s\d.\d\d\d\d\d\d");
+            MatchCollection matchCollection = regexTime.Matches("    0.003000 1 4a1  " +
+                                                                "Rx d 6 0d 08 b3 1b c1 00 ");
+            //matchCollection.Cast<List<string>>();
+            float time = 0;
+            if(matchCollection.Count > 0)
+                float.TryParse(matchCollection[0].ToString(), out time);
+            Console.WriteLine(time);
+
+            return dataParameters;
         }
     }
 }

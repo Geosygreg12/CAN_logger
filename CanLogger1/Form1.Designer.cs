@@ -38,6 +38,8 @@
             this.timeText = new System.Windows.Forms.TextBox();
             this.timeSearchButton = new System.Windows.Forms.Button();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.progressLabel = new System.Windows.Forms.Label();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.radioPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -134,11 +136,40 @@
             this.timeSearchButton.UseVisualStyleBackColor = true;
             this.timeSearchButton.Click += new System.EventHandler(this.TimeSearchButton_Click);
             // 
+            // backgroundWorker1
+            // 
+            this.backgroundWorker1.WorkerReportsProgress = true;
+            this.backgroundWorker1.WorkerSupportsCancellation = true;
+            this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.BackgroundWorker1_DoWork);
+            this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.BackgroundWorker1_ProgressChanged);
+            this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.BackgroundWorker1_RunWorkerCompleted);
+            // 
+            // progressLabel
+            // 
+            this.progressLabel.AutoSize = true;
+            this.progressLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.progressLabel.Location = new System.Drawing.Point(144, 232);
+            this.progressLabel.Name = "progressLabel";
+            this.progressLabel.Size = new System.Drawing.Size(143, 20);
+            this.progressLabel.TabIndex = 12;
+            this.progressLabel.Text = "Transmitting... 0%";
+            this.progressLabel.Visible = false;
+            // 
+            // progressBar
+            // 
+            this.progressBar.Location = new System.Drawing.Point(33, 263);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(361, 23);
+            this.progressBar.TabIndex = 13;
+            this.progressBar.Visible = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(944, 686);
+            this.Controls.Add(this.progressBar);
+            this.Controls.Add(this.progressLabel);
             this.Controls.Add(this.timeSearchButton);
             this.Controls.Add(this.timeText);
             this.Controls.Add(this.stopButton);
@@ -172,6 +203,17 @@
         private System.String startTime = string.Empty;
         private System.Text.RegularExpressions.Regex regexTime = new System.Text.RegularExpressions.Regex(@"^\d.\d\d\d\d\d\d");
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private System.Boolean isRead;
+        private System.Windows.Forms.Label progressLabel;
+        private System.Windows.Forms.ProgressBar progressBar;
+
+        private struct DataParameters
+        {
+            public int Message_Length;
+            public float Message_Time;
+            public string CAN_Message;
+            public string Channel_ID;
+        }
     }
 }
 
