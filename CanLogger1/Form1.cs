@@ -84,18 +84,11 @@ namespace CanLogger1
              * TODO::
              * make the textbox show the time it started if time exist or message box for wrong time
             and textbox text show the default message. **/
-            if (isRead)
-            {
-                //if time exists! -CONDITION WILL NOT NECESSARY BE ISREAD!!!!!!
-                //Let the name of the textbox be the time chosen
-                startTime = timeText.Text;
-            }
+            if (!timeText.Text.Equals("Enter the time in seconds")) startTime = timeText.Text;
             else
             {
-                //display a textbox showing that time is wrong and user should pick another time
-                MessageBox.Show("The time you picked does not exist in " +
-                                "this log kindly pick another time. \nThank you", "Message");
-            }
+                startTime = "\0";
+            } 
         }
 
         //if the user presses enter after inputing start time
@@ -110,20 +103,43 @@ namespace CanLogger1
       
         private void readAndTransmitFile()
         {
-            //THIS METHOD NEEDS TO BE MODIFIED TO TRANSMIT THE LOG FILE
-            //format how the time column is written in the log file
             try
             {
                 if (File.Exists(DirText.Text))
                 {
                     using (StreamReader streamReader = new StreamReader(DirText.Text, Encoding.ASCII))
                     {
-                        isRead = true;
+                        isRead = true; string loggedMessage = string.Empty; bool status = false;
 
                         while (!streamReader.EndOfStream)
                         {
-                            //add each row in the log file to the list
-                            listOfLoggedValues.Add(streamReader.ReadLine());
+                            if (loggedMessage.EndsWith("measurement")) status = true;
+
+                            if (status) //status is a bool that is used to indicate when CAN data starts in the log file
+                            {
+                                loggedMessage = streamReader.ReadLine();
+                                listOfLoggedValues = loggedMessage.Split(' ').ToList();
+
+                                //remove empty or white spaces
+                                while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
+
+                                //initialize the dataparams with values from the log file
+                                if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
+                                    MessageBox.Show("Enter a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                                if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
+                                    MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
+                                        MessageBoxIcon.Error);
+
+                                data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
+
+                                for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
+                                    data.CAN_Message += listOfLoggedValues[i];
+
+                                //transmit the data
+                                TransmitMethod(data);
+                            }
+                            else loggedMessage = streamReader.ReadLine();
                         }
                     }
                 }
@@ -138,28 +154,6 @@ namespace CanLogger1
                 Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
                 isRead = false;
             }
-
-            RegexMethod();
-        }
-
-        private DataParameters RegexMethod()
-        {
-            DataParameters dataParameters;
-            dataParameters.CAN_Message = string.Empty;
-            dataParameters.Channel_ID = string.Empty;
-            dataParameters.Message_Length = 0;
-            dataParameters.Message_Time = 0;
-
-            regexTime = new Regex(@"\s\d.\d\d\d\d\d\d");
-            MatchCollection matchCollection = regexTime.Matches("    0.003000 1 4a1  " +
-                                                                "Rx d 6 0d 08 b3 1b c1 00 ");
-            //matchCollection.Cast<List<string>>();
-            float time = 0;
-            if(matchCollection.Count > 0)
-                float.TryParse(matchCollection[0].ToString(), out time);
-            Console.WriteLine(time);
-
-            return dataParameters;
         }
     }
 }

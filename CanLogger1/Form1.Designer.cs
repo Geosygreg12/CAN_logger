@@ -206,6 +206,11 @@
         private System.Boolean isRead;
         private System.Windows.Forms.Label progressLabel;
         private System.Windows.Forms.ProgressBar progressBar;
+        private DataParameters data;
+        private const System.Int32 TIME_INDEX = 0;
+        private const System.Int32 CHANNEL_ID_INDEX = 2;
+        private const System.Int32 LENGTH_BIT_INDEX = 5;
+        private const System.Int32 MESSAGE_INDEX = 6;
 
         private struct DataParameters
         {

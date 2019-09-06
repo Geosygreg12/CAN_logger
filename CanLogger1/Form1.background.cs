@@ -37,5 +37,10 @@ namespace CanLogger1
             progressLabel.Text = "Transmitting... 0%";
             progressBar.Value = 0;
         }
+
+        private void TransmitMethod(DataParameters data)
+        {
+            //transmit the can message here
+        }
     }
 }
