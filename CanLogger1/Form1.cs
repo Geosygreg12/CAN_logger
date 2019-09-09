@@ -110,11 +110,15 @@ namespace CanLogger1
                     using (StreamReader streamReader = new StreamReader(DirText.Text, Encoding.ASCII))
                     {
                         isRead = true; string loggedMessage = string.Empty; bool status = false;
+                        streamLength = streamReader.BaseStream.Length / 51; streamVar = 1;
+                        Console.WriteLine(streamLength);
 
-                        while (!streamReader.EndOfStream)
+                        for(; !streamReader.EndOfStream; streamVar++)
                         {
-                            if (loggedMessage.EndsWith("measurement")) status = true;
+                            progressPercent = (int)(streamVar * 100 / streamLength);
+                            backgroundWorker1.ReportProgress(progressPercent, string.Format("Process data {0}", streamVar));
 
+                            if (loggedMessage.EndsWith("measurement")) status = true;
                             if (status) //status is a bool that is used to indicate when CAN data starts in the log file
                             {
                                 loggedMessage = streamReader.ReadLine();
@@ -124,17 +128,30 @@ namespace CanLogger1
                                 while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
                                 //initialize the dataparams with values from the log file
-                                if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
-                                    MessageBox.Show("Enter a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
+                                {
+                                    //Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
+                                }
+                                else
+                                {
+                                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End"))
+                                    {
+                                        MessageBox.Show("Transmission has finished", "Message");
+                                        break;
+                                    }
+                                    else MessageBox.Show("Enter a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                }
+
 
                                 if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
                                     MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
                                         MessageBoxIcon.Error);
 
                                 data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
+                                data.CAN_Message = new System.Collections.ArrayList();
 
                                 for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
-                                    data.CAN_Message += listOfLoggedValues[i];
+                                    data.CAN_Message.Add(listOfLoggedValues[i]);
 
                                 //transmit the data
                                 TransmitMethod(data);

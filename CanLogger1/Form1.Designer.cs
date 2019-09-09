@@ -153,7 +153,6 @@
             this.progressLabel.Size = new System.Drawing.Size(143, 20);
             this.progressLabel.TabIndex = 12;
             this.progressLabel.Text = "Transmitting... 0%";
-            this.progressLabel.Visible = false;
             // 
             // progressBar
             // 
@@ -161,7 +160,6 @@
             this.progressBar.Name = "progressBar";
             this.progressBar.Size = new System.Drawing.Size(361, 23);
             this.progressBar.TabIndex = 13;
-            this.progressBar.Visible = false;
             // 
             // Form1
             // 
@@ -211,12 +209,15 @@
         private const System.Int32 CHANNEL_ID_INDEX = 2;
         private const System.Int32 LENGTH_BIT_INDEX = 5;
         private const System.Int32 MESSAGE_INDEX = 6;
+        private System.Int64 streamLength;
+        private System.Int64 streamVar;
+        private System.Int32 progressPercent;
 
         private struct DataParameters
         {
             public int Message_Length;
             public float Message_Time;
-            public string CAN_Message;
+            public System.Collections.ArrayList CAN_Message;
             public string Channel_ID;
         }
     }

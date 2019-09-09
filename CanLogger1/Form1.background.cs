@@ -17,23 +17,35 @@ namespace CanLogger1
     {
         private void BackgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
-            readAndTransmitFile();
+            try
+            {
+                if (!backgroundWorker1.CancellationPending)
+                {
+                    readAndTransmitFile();
+                }
+                else Console.WriteLine("Cancelling Transmission...");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An Error has occured Message: " + ex.Message);
+            }            
         }
 
         private void BackgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            progressBar.Visible = true;
-            progressLabel.Visible = true;
-            progressLabel.Text = String.Format("Transmitting... {0}%", e.ProgressPercentage);
+            //progressBar.Visible = true;
+            //progressLabel.Visible = true;
+            Console.WriteLine("The code has reached here");
+            progressLabel.Text = string.Format("The Transmission is at... {0}%", e.ProgressPercentage);
             progressBar.Value = e.ProgressPercentage;
-            Console.WriteLine("The percentage is: " + e.ProgressPercentage);
+            progressBar.Update();
         }
 
         private void BackgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            Thread.Sleep(2000);
-            progressBar.Visible = false;
-            progressLabel.Visible = false;
+            //Thread.Sleep(2000);
+            //progressBar.Visible = false;
+            //progressLabel.Visible = false;
             progressLabel.Text = "Transmitting... 0%";
             progressBar.Value = 0;
         }
