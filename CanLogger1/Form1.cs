@@ -154,5 +154,10 @@ namespace CanLogger1
                 isRead = false;
             }
         }
+
+        private void Timer1_Tick(object sender, EventArgs e)
+        {
+            
+        }
     }
 }

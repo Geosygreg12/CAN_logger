@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.DirText = new System.Windows.Forms.TextBox();
             this.BrowseButton = new System.Windows.Forms.Button();
             this.singleRadio = new System.Windows.Forms.RadioButton();
@@ -39,6 +40,8 @@
             this.timeSearchButton = new System.Windows.Forms.Button();
             this.progressLabel = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.button1 = new System.Windows.Forms.Button();
             this.radioPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -139,24 +142,41 @@
             // 
             this.progressLabel.AutoSize = true;
             this.progressLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.progressLabel.Location = new System.Drawing.Point(144, 232);
+            this.progressLabel.Location = new System.Drawing.Point(99, 240);
             this.progressLabel.Name = "progressLabel";
-            this.progressLabel.Size = new System.Drawing.Size(143, 20);
+            this.progressLabel.Size = new System.Drawing.Size(136, 20);
             this.progressLabel.TabIndex = 12;
-            this.progressLabel.Text = "Transmitting... 0%";
+            this.progressLabel.Text = "No Transmission";
+            this.progressLabel.Visible = false;
             // 
             // progressBar
             // 
             this.progressBar.Location = new System.Drawing.Point(33, 263);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(361, 23);
+            this.progressBar.Size = new System.Drawing.Size(280, 23);
             this.progressBar.TabIndex = 13;
+            this.progressBar.Visible = false;
+            // 
+            // timer1
+            // 
+            this.timer1.Tick += new System.EventHandler(this.Timer1_Tick);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(319, 249);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 37);
+            this.button1.TabIndex = 14;
+            this.button1.Text = "Pause";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Visible = false;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(789, 405);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.progressLabel);
             this.Controls.Add(this.timeSearchButton);
@@ -202,6 +222,8 @@
         private System.Int64 streamLength;
         private System.Int64 streamVar;
         private System.Int32 progressPercent;
+        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Button button1;
 
         private struct DataParameters
         {
