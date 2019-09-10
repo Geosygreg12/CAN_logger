@@ -59,24 +59,12 @@ namespace CanLogger1
 
         private void StartButton_Click(object sender, EventArgs e)
         {
-             //isRead is a variable that reflects whether the file was read successfully
-
-            if (!backgroundWorker1.IsBusy)
-                backgroundWorker1.RunWorkerAsync();
-            else MessageBox.Show("Press the stop button first to stop previous transmissions and Start again", "Message");
-
-            if (isRead) MessageBox.Show("Transmission has started!");
-
+            Console.WriteLine("Transmission has started");
         }
 
         private void StopButton_Click(object sender, EventArgs e)
         {
-            if (backgroundWorker1.IsBusy)
-            {
-                backgroundWorker1.CancelAsync();
-                MessageBox.Show("Transmission has stopped!", "Message");
-            }else MessageBox.Show("There is no ongoing transmission to stop!", "Message",
-                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Console.WriteLine("Transmission has stopped");
         }
         private void TimeSearchButton_Click(object sender, EventArgs e)
         {
@@ -110,14 +98,11 @@ namespace CanLogger1
                     using (StreamReader streamReader = new StreamReader(DirText.Text, Encoding.ASCII))
                     {
                         isRead = true; string loggedMessage = string.Empty; bool status = false;
-                        streamLength = streamReader.BaseStream.Length / 51; streamVar = 1;
+                        streamLength = streamReader.BaseStream.Length / 50; streamVar = 1;
                         Console.WriteLine(streamLength);
 
                         for(; !streamReader.EndOfStream; streamVar++)
                         {
-                            progressPercent = (int)(streamVar * 100 / streamLength);
-                            backgroundWorker1.ReportProgress(progressPercent, string.Format("Process data {0}", streamVar));
-
                             if (loggedMessage.EndsWith("measurement")) status = true;
                             if (status) //status is a bool that is used to indicate when CAN data starts in the log file
                             {
@@ -130,7 +115,7 @@ namespace CanLogger1
                                 //initialize the dataparams with values from the log file
                                 if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
                                 {
-                                    //Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
+                                    Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
                                 }
                                 else
                                 {
@@ -152,9 +137,6 @@ namespace CanLogger1
 
                                 for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
                                     data.CAN_Message.Add(listOfLoggedValues[i]);
-
-                                //transmit the data
-                                TransmitMethod(data);
                             }
                             else loggedMessage = streamReader.ReadLine();
                         }

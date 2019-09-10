@@ -37,7 +37,6 @@
             this.stopButton = new System.Windows.Forms.Button();
             this.timeText = new System.Windows.Forms.TextBox();
             this.timeSearchButton = new System.Windows.Forms.Button();
-            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.progressLabel = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.radioPanel.SuspendLayout();
@@ -136,14 +135,6 @@
             this.timeSearchButton.UseVisualStyleBackColor = true;
             this.timeSearchButton.Click += new System.EventHandler(this.TimeSearchButton_Click);
             // 
-            // backgroundWorker1
-            // 
-            this.backgroundWorker1.WorkerReportsProgress = true;
-            this.backgroundWorker1.WorkerSupportsCancellation = true;
-            this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.BackgroundWorker1_DoWork);
-            this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.BackgroundWorker1_ProgressChanged);
-            this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.BackgroundWorker1_RunWorkerCompleted);
-            // 
             // progressLabel
             // 
             this.progressLabel.AutoSize = true;
@@ -165,7 +156,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(944, 686);
+            this.ClientSize = new System.Drawing.Size(789, 405);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.progressLabel);
             this.Controls.Add(this.timeSearchButton);
@@ -175,8 +166,8 @@
             this.Controls.Add(this.radioPanel);
             this.Controls.Add(this.BrowseButton);
             this.Controls.Add(this.DirText);
-            this.MaximumSize = new System.Drawing.Size(962, 733);
-            this.MinimumSize = new System.Drawing.Size(800, 415);
+            this.MaximumSize = new System.Drawing.Size(807, 452);
+            this.MinimumSize = new System.Drawing.Size(807, 452);
             this.Name = "Form1";
             this.Text = "Form1";
             this.radioPanel.ResumeLayout(false);
@@ -200,7 +191,6 @@
         private System.Windows.Forms.Button timeSearchButton;
         private System.String startTime = string.Empty;
         private System.Text.RegularExpressions.Regex regexTime = new System.Text.RegularExpressions.Regex(@"^\d.\d\d\d\d\d\d");
-        private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private System.Boolean isRead;
         private System.Windows.Forms.Label progressLabel;
         private System.Windows.Forms.ProgressBar progressBar;
