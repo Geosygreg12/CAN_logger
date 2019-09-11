@@ -125,7 +125,7 @@
             this.timeText.Name = "timeText";
             this.timeText.Size = new System.Drawing.Size(284, 27);
             this.timeText.TabIndex = 10;
-            this.timeText.Text = "Enter the time in seconds";
+            this.timeText.Text = "Enter the time in milliseconds";
             this.timeText.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TimeText_KeyDown);
             // 
             // timeSearchButton
@@ -159,17 +159,19 @@
             // 
             // timer1
             // 
+            this.timer1.Interval = 1;
             this.timer1.Tick += new System.EventHandler(this.Timer1_Tick);
             // 
             // button1
             // 
             this.button1.Location = new System.Drawing.Point(319, 249);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 37);
+            this.button1.Size = new System.Drawing.Size(93, 43);
             this.button1.TabIndex = 14;
             this.button1.Text = "Pause";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Visible = false;
+            this.button1.Click += new System.EventHandler(this.Button1_Click);
             // 
             // Form1
             // 
@@ -220,8 +222,10 @@
         private const System.Int32 LENGTH_BIT_INDEX = 5;
         private const System.Int32 MESSAGE_INDEX = 6;
         private System.Int64 streamLength;
-        private System.Int64 streamVar;
+        private System.Int64 streamVar = 1;
         private System.Int32 progressPercent;
+        private System.Int64 previousTime = 0;
+        private System.Boolean status = false;
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.Button button1;
         private System.IO.StreamReader streamReader;

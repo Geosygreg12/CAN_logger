@@ -54,14 +54,31 @@ namespace CanLogger1
         private void DirText_TextChanged(object sender, EventArgs e)
         {
             // if text change is true, delete previous list of can messages so new ones can be populated
+            if (listOfLoggedValues.Count > 1) StopButton_Click(sender, e);
             listOfLoggedValues.Clear();
         }
 
         private void StartButton_Click(object sender, EventArgs e)
         {
-            Console.WriteLine("Transmission has started");
-            streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
-            timer1.Enabled = true;
+            
+            if (File.Exists(DirText.Text))
+            {
+                streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
+                timer1.Enabled = true;
+                button1.Visible = true;
+                status = false;
+                button1.Text = "Pause";
+                Console.WriteLine("Transmission has started");
+                progressBar.Visible = true;
+                progressLabel.Visible = true;
+                progressPercent = 0;
+            }
+            else
+            {
+                MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                isRead = false;
+            }
+                
         }
 
         private void StopButton_Click(object sender, EventArgs e)
@@ -69,6 +86,11 @@ namespace CanLogger1
             Console.WriteLine("Transmission has stopped");
             timer1.Enabled = false;
             streamReader.Close();
+            button1.Visible = false;
+            progressBar.Visible = false;
+            progressLabel.Visible = false;
+            streamVar = 1;
+            progressLabel.Text = "NO Transmission";
         }
         private void TimeSearchButton_Click(object sender, EventArgs e)
         {
@@ -93,85 +115,111 @@ namespace CanLogger1
             }
         }
 
-        
-        private float readAndTransmitFile()
+        private void readAndTransmitFile()
         {
-            //try
-            //{
-                if (File.Exists(DirText.Text))
-                {
-                    isRead = true; bool status = false;
-                    streamLength = streamReader.BaseStream.Length / 50; streamVar = 1;
-                    //Console.WriteLine(streamLength);
+            try
+            {
+                isRead = true;
+                streamLength = (long)(streamReader.BaseStream.Length / 51.3);
+                if(progressPercent <=99) progressPercent = (int)((streamVar++ * 100) / streamLength);
+                Console.WriteLine(progressPercent);
+                progressLabel.Text = string.Format("Transmitting ... {0}%", progressPercent);
+                progressBar.Value = progressPercent;
+                progressBar.Update();
 
-                    //for (; !streamReader.EndOfStream; streamVar++)
-                    if(timer1.Enabled)
+                if (!string.IsNullOrEmpty(loggedMessage))
+                    if (loggedMessage.EndsWith("measurement")) status = true;
+
+                if (status) //status is a bool that is used to indicate when CAN data starts in the log file
+                {
+                    loggedMessage = streamReader.ReadLine();
+
+                    if (!string.IsNullOrEmpty(loggedMessage))
+                        listOfLoggedValues = loggedMessage.Split(' ').ToList();
+
+                    //remove empty or white spaces
+                    while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
+
+                    //var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
+
+                    //if (Var.Name.Equals("singleRadio"))
+                    //{
+                    //    return;
+                    //}
+
+
+
+
+                    //initialize the dataparams with values from the log file
+                    if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
                     {
-                        if (loggedMessage.EndsWith("measurement")) status = true;
-                        if (status) //status is a bool that is used to indicate when CAN data starts in the log file
-                        {
-                            loggedMessage = streamReader.ReadLine();
-                            listOfLoggedValues = loggedMessage.Split(' ').ToList();
-
-                            //remove empty or white spaces
-                            while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
-
-                            //initialize the dataparams with values from the log file
-                            if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
-                            {
-                                Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
-                            }
-                            else
-                            {
-                                if (listOfLoggedValues[TIME_INDEX].StartsWith("End"))
-                                {
-                                    MessageBox.Show("Transmission has finished", "Message");
-                                    //break;
-                                }
-                                else MessageBox.Show("Time is not a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            }
-
-
-                            if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
-                                MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
-                                    MessageBoxIcon.Error);
-
-                            data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
-                            data.CAN_Message = new System.Collections.ArrayList();
-
-                            for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
-                                data.CAN_Message.Add(listOfLoggedValues[i]);
-                        }
-                        else loggedMessage = streamReader.ReadLine();
+                        Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
                     }
-                }
-                else
-                {
-                    MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    isRead = false;
-                }
-            //}
-            //catch (Exception exception)
-            //{
-            //    Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
-            //    isRead = false;
-            //    Console.ReadLine();
-            //}
+                    else
+                    {
+                        if (listOfLoggedValues[TIME_INDEX].StartsWith("End"))
+                        {
+                            Thread.Sleep(1000);
+                            StopButton_Click(this, EventArgs.Empty);
+                            MessageBox.Show("Transmission has finished", "Message");
+                            return;
+                        }
+                        else MessageBox.Show("Time is not a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
 
-            return data.Message_Time;
+                    if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
+                        MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+
+                    data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
+                    data.CAN_Message = new System.Collections.ArrayList();
+
+                    for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
+                        data.CAN_Message.Add(listOfLoggedValues[i]);
+                }
+                else loggedMessage = streamReader.ReadLine();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
+                isRead = false;
+                Console.ReadLine();
+            }
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            //if timer >= previoustime
-            float message_time = 0; long i = 0;
-
-            while (timer1.Enabled)
+            var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
+            switch (Var.Name)
             {
-                if(((timer1.Interval *i) + 20) > (message_time *1000))
-                    message_time = readAndTransmitFile();
-                else   i++;
-            }            
+                case "singleRadio":
+                    if (data.Message_Time < previousTime) readAndTransmitFile();
+                    else previousTime = timer1.Interval;
+                    break;
+                case "tillEndRadio": 
+                default:
+                    if (data.Message_Time < previousTime) readAndTransmitFile();
+                    else previousTime = (long)data.Message_Time + timer1.Interval;
+                    break;
+            }
+            
+        }
+
+        private void Button1_Click(object sender, EventArgs e)
+        {
+            switch (button1.Text)
+            {
+                case "Pause":
+                    Console.WriteLine("Transmission has stopped");
+                    timer1.Enabled = false;
+                    button1.Text = "Continue";
+                    break;
+                case "Continue":
+                    Console.WriteLine("Transmission has started");
+                    timer1.Enabled = true;
+                    button1.Text = "Pause";
+                    break;
+            }
         }
     }
 }
