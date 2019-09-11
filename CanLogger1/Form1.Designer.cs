@@ -224,6 +224,8 @@
         private System.Int32 progressPercent;
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.Button button1;
+        private System.IO.StreamReader streamReader;
+        private string loggedMessage = string.Empty;
 
         private struct DataParameters
         {

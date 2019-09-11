@@ -60,11 +60,15 @@ namespace CanLogger1
         private void StartButton_Click(object sender, EventArgs e)
         {
             Console.WriteLine("Transmission has started");
+            streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
+            timer1.Enabled = true;
         }
 
         private void StopButton_Click(object sender, EventArgs e)
         {
             Console.WriteLine("Transmission has stopped");
+            timer1.Enabled = false;
+            streamReader.Close();
         }
         private void TimeSearchButton_Click(object sender, EventArgs e)
         {
@@ -88,58 +92,57 @@ namespace CanLogger1
                 StartButton_Click(sender, e);
             }
         }
-      
-        private void readAndTransmitFile()
+
+        
+        private float readAndTransmitFile()
         {
-            try
-            {
+            //try
+            //{
                 if (File.Exists(DirText.Text))
                 {
-                    using (StreamReader streamReader = new StreamReader(DirText.Text, Encoding.ASCII))
+                    isRead = true; bool status = false;
+                    streamLength = streamReader.BaseStream.Length / 50; streamVar = 1;
+                    //Console.WriteLine(streamLength);
+
+                    //for (; !streamReader.EndOfStream; streamVar++)
+                    if(timer1.Enabled)
                     {
-                        isRead = true; string loggedMessage = string.Empty; bool status = false;
-                        streamLength = streamReader.BaseStream.Length / 50; streamVar = 1;
-                        Console.WriteLine(streamLength);
-
-                        for(; !streamReader.EndOfStream; streamVar++)
+                        if (loggedMessage.EndsWith("measurement")) status = true;
+                        if (status) //status is a bool that is used to indicate when CAN data starts in the log file
                         {
-                            if (loggedMessage.EndsWith("measurement")) status = true;
-                            if (status) //status is a bool that is used to indicate when CAN data starts in the log file
+                            loggedMessage = streamReader.ReadLine();
+                            listOfLoggedValues = loggedMessage.Split(' ').ToList();
+
+                            //remove empty or white spaces
+                            while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
+
+                            //initialize the dataparams with values from the log file
+                            if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
                             {
-                                loggedMessage = streamReader.ReadLine();
-                                listOfLoggedValues = loggedMessage.Split(' ').ToList();
-
-                                //remove empty or white spaces
-                                while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
-
-                                //initialize the dataparams with values from the log file
-                                if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
-                                {
-                                    Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
-                                }
-                                else
-                                {
-                                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End"))
-                                    {
-                                        MessageBox.Show("Transmission has finished", "Message");
-                                        break;
-                                    }
-                                    else MessageBox.Show("Enter a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                }
-
-
-                                if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
-                                    MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
-                                        MessageBoxIcon.Error);
-
-                                data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
-                                data.CAN_Message = new System.Collections.ArrayList();
-
-                                for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
-                                    data.CAN_Message.Add(listOfLoggedValues[i]);
+                                Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
                             }
-                            else loggedMessage = streamReader.ReadLine();
+                            else
+                            {
+                                if (listOfLoggedValues[TIME_INDEX].StartsWith("End"))
+                                {
+                                    MessageBox.Show("Transmission has finished", "Message");
+                                    //break;
+                                }
+                                else MessageBox.Show("Time is not a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+
+
+                            if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
+                                MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
+                                    MessageBoxIcon.Error);
+
+                            data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
+                            data.CAN_Message = new System.Collections.ArrayList();
+
+                            for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
+                                data.CAN_Message.Add(listOfLoggedValues[i]);
                         }
+                        else loggedMessage = streamReader.ReadLine();
                     }
                 }
                 else
@@ -147,17 +150,28 @@ namespace CanLogger1
                     MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     isRead = false;
                 }
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
-                isRead = false;
-            }
+            //}
+            //catch (Exception exception)
+            //{
+            //    Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
+            //    isRead = false;
+            //    Console.ReadLine();
+            //}
+
+            return data.Message_Time;
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            
+            //if timer >= previoustime
+            float message_time = 0; long i = 0;
+
+            while (timer1.Enabled)
+            {
+                if(((timer1.Interval *i) + 20) > (message_time *1000))
+                    message_time = readAndTransmitFile();
+                else   i++;
+            }            
         }
     }
 }
