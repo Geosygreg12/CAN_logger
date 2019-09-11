@@ -60,7 +60,7 @@ namespace CanLogger1
 
         private void StartButton_Click(object sender, EventArgs e)
         {
-            
+            //initialize the start up values
             if (File.Exists(DirText.Text))
             {
                 streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
@@ -80,6 +80,7 @@ namespace CanLogger1
 
         private void StopButton_Click(object sender, EventArgs e)
         {
+            //reset the relevant params
             Console.WriteLine("Transmission has stopped");
             timer1.Enabled = false;
             streamReader.Close();
@@ -105,21 +106,20 @@ namespace CanLogger1
             try
             {
                 streamLength = (long)(streamReader.BaseStream.Length / 51.3);
+
                 if(progressPercent <=99) progressPercent = (int)((streamVar++ * 100) / streamLength);
-                //Console.WriteLine(progressPercent);
+
                 progressLabel.Text = string.Format("Transmitting ... {0}%", progressPercent);
                 progressBar.Value = progressPercent;
                 progressBar.Update();
 
-                if (!string.IsNullOrEmpty(loggedMessage))
-                    if (loggedMessage.EndsWith("measurement")) status = true;
+                if (!string.IsNullOrEmpty(loggedMessage)) if (loggedMessage.EndsWith("measurement")) status = true;
 
-                if (status) //status is a bool that is used to indicate when CAN data starts in the log file
+                if (status) //status is a bool that is used to indicate where CAN data starts in the log file
                 {
                     loggedMessage = streamReader.ReadLine();
 
-                    if (!string.IsNullOrEmpty(loggedMessage))
-                        listOfLoggedValues = loggedMessage.Split(' ').ToList();
+                    if (!string.IsNullOrEmpty(loggedMessage)) listOfLoggedValues = loggedMessage.Split(' ').ToList();
 
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
@@ -144,8 +144,7 @@ namespace CanLogger1
                     data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
                     data.CAN_Message = new System.Collections.ArrayList();
 
-                    for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++)
-                        data.CAN_Message.Add(listOfLoggedValues[i]);
+                    for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++) data.CAN_Message.Add(listOfLoggedValues[i]);
                 }
                 else loggedMessage = streamReader.ReadLine();
             }
@@ -199,13 +198,13 @@ namespace CanLogger1
                 case "tillEndRadio":
 
                 default:
+
                     if (int.TryParse(timeText.Text, out startTime)) //get the start time
                     {
                         if (startTime <= messageTime) //from the start time transmit until end of file
-                        {
                             if(listOfLoggedValues.Count > 1) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
-                        }
                     }
+
                     if (data.Message_Time < previousTime) readAndTransmitFile();
                     else previousTime = (long)data.Message_Time + timer1.Interval;
                     break;
