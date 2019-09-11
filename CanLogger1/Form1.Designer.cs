@@ -37,11 +37,10 @@
             this.startButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
             this.timeText = new System.Windows.Forms.TextBox();
-            this.timeSearchButton = new System.Windows.Forms.Button();
             this.progressLabel = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button1 = new System.Windows.Forms.Button();
+            this.PauseButton = new System.Windows.Forms.Button();
             this.radioPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -128,16 +127,6 @@
             this.timeText.Text = "Enter the time in milliseconds";
             this.timeText.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TimeText_KeyDown);
             // 
-            // timeSearchButton
-            // 
-            this.timeSearchButton.Location = new System.Drawing.Point(319, 162);
-            this.timeSearchButton.Name = "timeSearchButton";
-            this.timeSearchButton.Size = new System.Drawing.Size(75, 37);
-            this.timeSearchButton.TabIndex = 11;
-            this.timeSearchButton.Text = "Search";
-            this.timeSearchButton.UseVisualStyleBackColor = true;
-            this.timeSearchButton.Click += new System.EventHandler(this.TimeSearchButton_Click);
-            // 
             // progressLabel
             // 
             this.progressLabel.AutoSize = true;
@@ -162,26 +151,25 @@
             this.timer1.Interval = 1;
             this.timer1.Tick += new System.EventHandler(this.Timer1_Tick);
             // 
-            // button1
+            // PauseButton
             // 
-            this.button1.Location = new System.Drawing.Point(319, 249);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(93, 43);
-            this.button1.TabIndex = 14;
-            this.button1.Text = "Pause";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Visible = false;
-            this.button1.Click += new System.EventHandler(this.Button1_Click);
+            this.PauseButton.Location = new System.Drawing.Point(319, 249);
+            this.PauseButton.Name = "PauseButton";
+            this.PauseButton.Size = new System.Drawing.Size(93, 43);
+            this.PauseButton.TabIndex = 14;
+            this.PauseButton.Text = "Pause";
+            this.PauseButton.UseVisualStyleBackColor = true;
+            this.PauseButton.Visible = false;
+            this.PauseButton.Click += new System.EventHandler(this.PauseButton_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(789, 405);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.PauseButton);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.progressLabel);
-            this.Controls.Add(this.timeSearchButton);
             this.Controls.Add(this.timeText);
             this.Controls.Add(this.stopButton);
             this.Controls.Add(this.startButton);
@@ -210,10 +198,7 @@
         private System.Windows.Forms.Button stopButton;
         private System.Collections.Generic.List<string> listOfLoggedValues = new System.Collections.Generic.List<string>();
         private System.Windows.Forms.TextBox timeText;
-        private System.Windows.Forms.Button timeSearchButton;
-        private System.String startTime = string.Empty;
-        private System.Text.RegularExpressions.Regex regexTime = new System.Text.RegularExpressions.Regex(@"^\d.\d\d\d\d\d\d");
-        private System.Boolean isRead;
+        private System.Int32 startTime = 0;
         private System.Windows.Forms.Label progressLabel;
         private System.Windows.Forms.ProgressBar progressBar;
         private DataParameters data;
@@ -227,7 +212,7 @@
         private System.Int64 previousTime = 0;
         private System.Boolean status = false;
         private System.Windows.Forms.Timer timer1;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button PauseButton;
         private System.IO.StreamReader streamReader;
         private string loggedMessage = string.Empty;
 

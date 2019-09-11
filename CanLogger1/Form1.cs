@@ -65,20 +65,15 @@ namespace CanLogger1
             {
                 streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
                 timer1.Enabled = true;
-                button1.Visible = true;
+                PauseButton.Visible = true;
                 status = false;
-                button1.Text = "Pause";
+                PauseButton.Text = "Pause";
                 Console.WriteLine("Transmission has started");
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
                 progressPercent = 0;
             }
-            else
-            {
-                MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                isRead = false;
-            }
-                
+            else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void StopButton_Click(object sender, EventArgs e)
@@ -86,43 +81,26 @@ namespace CanLogger1
             Console.WriteLine("Transmission has stopped");
             timer1.Enabled = false;
             streamReader.Close();
-            button1.Visible = false;
+            PauseButton.Visible = false;
             progressBar.Visible = false;
             progressLabel.Visible = false;
             streamVar = 1;
             progressLabel.Text = "NO Transmission";
         }
-        private void TimeSearchButton_Click(object sender, EventArgs e)
-        {
-            /**
-             * TODO::
-             * make the textbox show the time it started if time exist or message box for wrong time
-            and textbox text show the default message. **/
-            if (!timeText.Text.Equals("Enter the time in seconds")) startTime = timeText.Text;
-            else
-            {
-                startTime = "\0";
-            } 
-        }
 
         //if the user presses enter after inputing start time
         private void TimeText_KeyDown(object sender, KeyEventArgs e) 
         {
-            if (e.KeyCode == Keys.Enter)
-            {
-                TimeSearchButton_Click(sender, e);
-                StartButton_Click(sender, e);
-            }
+            if (e.KeyCode == Keys.Enter) StartButton_Click(sender, e);
         }
 
         private void readAndTransmitFile()
         {
             try
             {
-                isRead = true;
                 streamLength = (long)(streamReader.BaseStream.Length / 51.3);
                 if(progressPercent <=99) progressPercent = (int)((streamVar++ * 100) / streamLength);
-                Console.WriteLine(progressPercent);
+                //Console.WriteLine(progressPercent);
                 progressLabel.Text = string.Format("Transmitting ... {0}%", progressPercent);
                 progressBar.Value = progressPercent;
                 progressBar.Update();
@@ -140,20 +118,10 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
-                    //var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
-
-                    //if (Var.Name.Equals("singleRadio"))
-                    //{
-                    //    return;
-                    //}
-
-
-
-
                     //initialize the dataparams with values from the log file
                     if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
                     {
-                        Console.WriteLine(listOfLoggedValues[TIME_INDEX]);
+                        Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                     }
                     else
                     {
@@ -182,42 +150,66 @@ namespace CanLogger1
             catch (Exception exception)
             {
                 Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
-                isRead = false;
-                Console.ReadLine();
             }
         }
 
         private void Timer1_Tick(object sender, EventArgs e)
         {
             var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
+            float messageTime = (float) data.Message_Time * 1000;
+
             switch (Var.Name)
             {
                 case "singleRadio":
-                    if (data.Message_Time < previousTime) readAndTransmitFile();
-                    else previousTime = timer1.Interval;
+
+                    if (int.TryParse(timeText.Text, out startTime))
+                    {
+                        if (startTime == (data.Message_Time * 1000))
+                        {
+                            //transmit current message
+                            if (status) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+
+                            if (data.Message_Time < previousTime) readAndTransmitFile();
+                            else previousTime = (long)data.Message_Time + timer1.Interval;
+                        }
+                        else
+                        {
+                            if(startTime > (data.Message_Time * 1000)) readAndTransmitFile();
+                            else
+                            {
+                                StopButton_Click(this, EventArgs.Empty);
+                                MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        StopButton_Click(this, EventArgs.Empty);
+                        MessageBox.Show("Enter only numbers in the time search space", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }                    
                     break;
-                case "tillEndRadio": 
+
+                case "tillEndRadio":
                 default:
                     if (data.Message_Time < previousTime) readAndTransmitFile();
                     else previousTime = (long)data.Message_Time + timer1.Interval;
                     break;
             }
-            
         }
 
-        private void Button1_Click(object sender, EventArgs e)
+        private void PauseButton_Click(object sender, EventArgs e)
         {
-            switch (button1.Text)
+            switch (PauseButton.Text)
             {
                 case "Pause":
                     Console.WriteLine("Transmission has stopped");
                     timer1.Enabled = false;
-                    button1.Text = "Continue";
+                    PauseButton.Text = "Continue";
                     break;
                 case "Continue":
                     Console.WriteLine("Transmission has started");
                     timer1.Enabled = true;
-                    button1.Text = "Pause";
+                    PauseButton.Text = "Pause";
                     break;
             }
         }
