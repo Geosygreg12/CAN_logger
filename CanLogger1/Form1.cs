@@ -101,7 +101,7 @@ namespace CanLogger1
             if (e.KeyCode == Keys.Enter) StartButton_Click(sender, e);
         }
 
-        private void readAndTransmitFile()
+        private void ReadCANLogFile()
         {
             try
             {
@@ -170,17 +170,17 @@ namespace CanLogger1
                             //transmit current message
                             Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
 
-                            if (data.Message_Time < previousTime) readAndTransmitFile();
+                            if (data.Message_Time < previousTime) ReadCANLogFile();
                             else previousTime = (long)data.Message_Time + timer1.Interval;
                         }
                         else
                         {
                             if (startTime > messageTime) //else is start time still ahead? yes, read file
                             {
-                                readAndTransmitFile();
+                                ReadCANLogFile();
                                 previousTime = (long)data.Message_Time + timer1.Interval;
                             } 
-                            else //elsewe have passed requested time, stop transmission
+                            else //else we have passed requested time, stop transmission
                             {
                                 StopButton_Click(this, EventArgs.Empty);
                                 MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -202,10 +202,15 @@ namespace CanLogger1
                     if (int.TryParse(timeText.Text, out startTime)) //get the start time
                     {
                         if (startTime <= messageTime) //from the start time transmit until end of file
-                            if(listOfLoggedValues.Count > 1) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                            if (listOfLoggedValues.Count > 1) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                    }
+                    else
+                    {
+                        //transmit logged data
+                        //if (listOfLoggedValues.Count > 1) ;
                     }
 
-                    if (data.Message_Time < previousTime) readAndTransmitFile();
+                    if (data.Message_Time < previousTime) ReadCANLogFile();
                     else previousTime = (long)data.Message_Time + timer1.Interval;
                     break;
             }
