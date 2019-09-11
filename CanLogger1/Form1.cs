@@ -85,6 +85,7 @@ namespace CanLogger1
             progressBar.Visible = false;
             progressLabel.Visible = false;
             streamVar = 1;
+            data.Message_Time = 0;
             progressLabel.Text = "NO Transmission";
         }
 
@@ -119,11 +120,7 @@ namespace CanLogger1
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
                     //initialize the dataparams with values from the log file
-                    if (float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
-                    {
-                        Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
-                    }
-                    else
+                    if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
                     {
                         if (listOfLoggedValues[TIME_INDEX].StartsWith("End"))
                         {
@@ -161,10 +158,9 @@ namespace CanLogger1
             switch (Var.Name)
             {
                 case "singleRadio":
-
                     if (int.TryParse(timeText.Text, out startTime))
                     {
-                        if (startTime == (data.Message_Time * 1000))
+                        if (startTime == messageTime)
                         {
                             //transmit current message
                             if (status) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
@@ -174,7 +170,11 @@ namespace CanLogger1
                         }
                         else
                         {
-                            if(startTime > (data.Message_Time * 1000)) readAndTransmitFile();
+                            if (startTime > messageTime)
+                            {
+                                readAndTransmitFile();
+                                previousTime = (long)data.Message_Time + timer1.Interval;
+                            } 
                             else
                             {
                                 StopButton_Click(this, EventArgs.Empty);
