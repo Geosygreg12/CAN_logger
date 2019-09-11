@@ -109,7 +109,7 @@ namespace CanLogger1
 
                 if(progressPercent <=99) progressPercent = (int)((streamVar++ * 100) / streamLength);
 
-                progressLabel.Text = string.Format("Transmitting ... {0}%", progressPercent);
+                progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
                 progressBar.Value = progressPercent;
                 progressBar.Update();
 
