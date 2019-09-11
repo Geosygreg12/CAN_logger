@@ -72,6 +72,7 @@ namespace CanLogger1
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
                 progressPercent = 0;
+                streamVar = 0;
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
             }
@@ -207,7 +208,7 @@ namespace CanLogger1
                     else
                     {
                         //transmit logged data
-                        //if (listOfLoggedValues.Count > 1) ;
+                        if (listOfLoggedValues.Count > 1) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                     }
 
                     if (data.Message_Time < previousTime) ReadCANLogFile();
