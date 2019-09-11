@@ -41,6 +41,8 @@
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.PauseButton = new System.Windows.Forms.Button();
+            this.timeLabel = new System.Windows.Forms.Label();
+            this.timeUpdateText = new System.Windows.Forms.TextBox();
             this.radioPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -131,7 +133,7 @@
             // 
             this.progressLabel.AutoSize = true;
             this.progressLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.progressLabel.Location = new System.Drawing.Point(99, 240);
+            this.progressLabel.Location = new System.Drawing.Point(71, 219);
             this.progressLabel.Name = "progressLabel";
             this.progressLabel.Size = new System.Drawing.Size(136, 20);
             this.progressLabel.TabIndex = 12;
@@ -140,7 +142,7 @@
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(33, 263);
+            this.progressBar.Location = new System.Drawing.Point(29, 249);
             this.progressBar.Name = "progressBar";
             this.progressBar.Size = new System.Drawing.Size(280, 23);
             this.progressBar.TabIndex = 13;
@@ -153,7 +155,7 @@
             // 
             // PauseButton
             // 
-            this.PauseButton.Location = new System.Drawing.Point(319, 249);
+            this.PauseButton.Location = new System.Drawing.Point(315, 229);
             this.PauseButton.Name = "PauseButton";
             this.PauseButton.Size = new System.Drawing.Size(93, 43);
             this.PauseButton.TabIndex = 14;
@@ -162,11 +164,31 @@
             this.PauseButton.Visible = false;
             this.PauseButton.Click += new System.EventHandler(this.PauseButton_Click);
             // 
+            // timeLabel
+            // 
+            this.timeLabel.AutoSize = true;
+            this.timeLabel.Location = new System.Drawing.Point(29, 288);
+            this.timeLabel.Name = "timeLabel";
+            this.timeLabel.Size = new System.Drawing.Size(43, 17);
+            this.timeLabel.TabIndex = 15;
+            this.timeLabel.Text = "Time:";
+            this.timeLabel.Visible = false;
+            // 
+            // timeUpdateText
+            // 
+            this.timeUpdateText.Location = new System.Drawing.Point(78, 283);
+            this.timeUpdateText.Name = "timeUpdateText";
+            this.timeUpdateText.Size = new System.Drawing.Size(132, 22);
+            this.timeUpdateText.TabIndex = 16;
+            this.timeUpdateText.Visible = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(789, 405);
+            this.Controls.Add(this.timeUpdateText);
+            this.Controls.Add(this.timeLabel);
             this.Controls.Add(this.PauseButton);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.progressLabel);
@@ -215,6 +237,8 @@
         private System.Windows.Forms.Button PauseButton;
         private System.IO.StreamReader streamReader;
         private string loggedMessage = string.Empty;
+        private System.Windows.Forms.Label timeLabel;
+        private System.Windows.Forms.TextBox timeUpdateText;
 
         private struct DataParameters
         {

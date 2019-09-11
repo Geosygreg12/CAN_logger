@@ -72,6 +72,8 @@ namespace CanLogger1
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
                 progressPercent = 0;
+                timeLabel.Visible = true;
+                timeUpdateText.Visible = true;
             }
             else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -84,6 +86,9 @@ namespace CanLogger1
             PauseButton.Visible = false;
             progressBar.Visible = false;
             progressLabel.Visible = false;
+            timeLabel.Visible = false;
+            timeUpdateText.Visible = false;
+            listOfLoggedValues.Clear();
             streamVar = 1;
             data.Message_Time = 0;
             progressLabel.Text = "NO Transmission";
@@ -122,11 +127,11 @@ namespace CanLogger1
                     //initialize the dataparams with values from the log file
                     if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
                     {
-                        if (listOfLoggedValues[TIME_INDEX].StartsWith("End"))
+                        if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
                         {
                             Thread.Sleep(1000);
                             StopButton_Click(this, EventArgs.Empty);
-                            MessageBox.Show("Transmission has finished", "Message");
+                            MessageBox.Show("Transmission has finished", "Message"); //end transmission and return
                             return;
                         }
                         else MessageBox.Show("Time is not a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -152,33 +157,35 @@ namespace CanLogger1
 
         private void Timer1_Tick(object sender, EventArgs e)
         {
+            //get which radio button is checked
             var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
             float messageTime = (float) data.Message_Time * 1000;
 
             switch (Var.Name)
             {
                 case "singleRadio":
-                    if (int.TryParse(timeText.Text, out startTime))
+                    if (int.TryParse(timeText.Text, out startTime)) 
                     {
-                        if (startTime == messageTime)
+                        if (startTime == messageTime) //for single transmission, is the message time = starttime? yes, transmit
                         {
                             //transmit current message
-                            if (status) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                            Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
 
                             if (data.Message_Time < previousTime) readAndTransmitFile();
                             else previousTime = (long)data.Message_Time + timer1.Interval;
                         }
                         else
                         {
-                            if (startTime > messageTime)
+                            if (startTime > messageTime) //else is start time still ahead? yes, read file
                             {
                                 readAndTransmitFile();
                                 previousTime = (long)data.Message_Time + timer1.Interval;
                             } 
-                            else
+                            else //elsewe have passed requested time, stop transmission
                             {
                                 StopButton_Click(this, EventArgs.Empty);
                                 MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                return;
                             }
                         }
                     }
@@ -190,11 +197,21 @@ namespace CanLogger1
                     break;
 
                 case "tillEndRadio":
+
                 default:
+                    if (int.TryParse(timeText.Text, out startTime)) //get the start time
+                    {
+                        if (startTime <= messageTime) //from the start time transmit until end of file
+                        {
+                            if(listOfLoggedValues.Count > 1) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                        }
+                    }
                     if (data.Message_Time < previousTime) readAndTransmitFile();
                     else previousTime = (long)data.Message_Time + timer1.Interval;
                     break;
             }
+
+            timeUpdateText.Text = messageTime.ToString(); //send live update to UI to keep track of message
         }
 
         private void PauseButton_Click(object sender, EventArgs e)
