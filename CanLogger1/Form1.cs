@@ -42,7 +42,7 @@ namespace CanLogger1
             catch (Exception exception)
             {
                 Console.WriteLine("An exception occured! Exception: " + exception.Message);
-            }            
+            }
         }
 
         private void DirText_KeyDown(object sender, KeyEventArgs e)
@@ -63,16 +63,14 @@ namespace CanLogger1
             //initialize the start up values
             if (File.Exists(DirText.Text))
             {
-                streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
+                if (!timer1.Enabled && !PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
                 timer1.Enabled = true;
                 PauseButton.Visible = true;
-                status = false;
                 PauseButton.Text = "Pause";
                 Console.WriteLine("Transmission has started");
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
                 progressPercent = 0;
-                streamVar = 0;
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
             }
@@ -90,6 +88,7 @@ namespace CanLogger1
             progressLabel.Visible = false;
             timeLabel.Visible = false;
             timeUpdateText.Visible = false;
+            status = false;
             listOfLoggedValues.Clear();
             streamVar = 1;
             data.Message_Time = 0;
@@ -97,7 +96,7 @@ namespace CanLogger1
         }
 
         //if the user presses enter after inputing start time
-        private void TimeText_KeyDown(object sender, KeyEventArgs e) 
+        private void TimeText_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter) StartButton_Click(sender, e);
         }
@@ -108,7 +107,7 @@ namespace CanLogger1
             {
                 streamLength = (long)(streamReader.BaseStream.Length / 51.3);
 
-                if(progressPercent <=99) progressPercent = (int)((streamVar++ * 100) / streamLength);
+                if (progressPercent <= 99) progressPercent = (int)((streamVar++ * 100) / streamLength);
 
                 progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
                 progressBar.Value = progressPercent;
@@ -155,32 +154,33 @@ namespace CanLogger1
             }
         }
 
+        bool tracker = false;
         private void Timer1_Tick(object sender, EventArgs e)
         {
             //get which radio button is checked
             var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
-            float messageTime = (float) data.Message_Time * 1000;
+            float messageTime = (float)data.Message_Time * 1000;
 
             switch (Var.Name)
             {
                 case "singleRadio":
-                    if (int.TryParse(timeText.Text, out startTime)) 
+                    if (int.TryParse(timeText.Text, out startTime))
                     {
                         if (startTime == messageTime) //for single transmission, is the message time = starttime? yes, transmit
                         {
                             //transmit current message
-                            Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                            if (status) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
 
-                            if (data.Message_Time < previousTime) ReadCANLogFile();
-                            else previousTime = (long)data.Message_Time + timer1.Interval;
+                            if (messageTime <= previousTime) ReadCANLogFile();
+                            else previousTime = (long)messageTime + timer1.Interval;
                         }
                         else
                         {
                             if (startTime > messageTime) //else is start time still ahead? yes, read file
                             {
                                 ReadCANLogFile();
-                                previousTime = (long)data.Message_Time + timer1.Interval;
-                            } 
+                                previousTime = (long)messageTime + timer1.Interval;
+                            }
                             else //else we have passed requested time, stop transmission
                             {
                                 StopButton_Click(this, EventArgs.Empty);
@@ -193,7 +193,7 @@ namespace CanLogger1
                     {
                         StopButton_Click(this, EventArgs.Empty);
                         MessageBox.Show("Enter only numbers in the time search space", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }                    
+                    }
                     break;
 
                 case "tillEndRadio":
@@ -202,17 +202,26 @@ namespace CanLogger1
 
                     if (int.TryParse(timeText.Text, out startTime)) //get the start time
                     {
-                        if (startTime <= messageTime) //from the start time transmit until end of file
-                            if (listOfLoggedValues.Count > 1) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                        if (startTime <= messageTime)//transmit from start time to end of file
+                            if (status && tracker) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                     }
                     else
                     {
                         //transmit logged data
-                        if (listOfLoggedValues.Count > 1) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                        if (status && tracker) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                     }
 
-                    if (data.Message_Time < previousTime) ReadCANLogFile();
-                    else previousTime = (long)data.Message_Time + timer1.Interval;
+                    if (messageTime <= previousTime)
+                    {
+                        tracker = true;
+                        ReadCANLogFile();
+                    }
+                    else
+                    {
+                        previousTime = (long)messageTime + timer1.Interval;
+                        tracker = false;
+                    }
+
                     break;
             }
 
