@@ -14,54 +14,131 @@ namespace CanLogger1
         Canlib.canStatus status;
         int canHandle;
         Form1 form1 = new Form1();
+
+        ushort peakHandle;
+        TPCANBaudrate pCANBaudrate;
+        TPCANMsg pCANMsg;
+        TPCANStatus pCANStatus;
+
+        public bool tracker = false;
+
         public CANTransmitterClass() { initialise(); } //public constructor
-        public void Transmitter(bool enable)
+        public void Transmitter()
         {
-            transmitterTimer.Enabled = enable;
-            if (enable) transmitterTimer.Start();
+            transmitterTimer.Enabled = true;
+            transmitterTimer.Start();
         }
 
         private void initialise()
         {
-            Canlib.canInitializeLibrary();
-            canHandle = Canlib.canOpenChannel(1, Canlib.canOPEN_EXCLUSIVE);
-            errorControl(handle: canHandle);
-            status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
-            errorControl(status: this.status, location: "canSetBusParams: initialise()");
-            Canlib.canSetBusOutputControl(canHandle, Canlib.canDRIVER_NORMAL);
-            Canlib.canBusOn(canHandle);
+            switch (form1.GetInterface)
+            {
+                case 1:
+
+                    Canlib.canInitializeLibrary();
+                    canHandle = Canlib.canOpenChannel(1, Canlib.canOPEN_EXCLUSIVE);
+                    errorControl(handle: canHandle, location: "canOpenChannel: initialise()");
+                    status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
+                    errorControl(status: this.status, location: "canSetBusParams: initialise()");
+                    Canlib.canSetBusOutputControl(canHandle, Canlib.canDRIVER_NORMAL);
+                    Canlib.canBusOn(canHandle);
+
+                    break;
+
+                case 2:
+
+                    peakHandle = PCANBasic.PCAN_USBBUS1;
+                    pCANBaudrate = TPCANBaudrate.PCAN_BAUD_500K;
+
+                    if (PCANBasic.Initialize(peakHandle, pCANBaudrate) == TPCANStatus.PCAN_ERROR_INITIALIZE)
+                    {
+                        errorControl(-1, location: "PCANBasic.initialize: initialise()");
+                        return;
+                    }
+
+                    break;
+            }
 
             transmitterTimer = new Timer();
             transmitterTimer.Interval = 1;
             transmitterTimer.Elapsed += TransmitterTimer_Elapsed;
+            transmitterTimer.Enabled = false;
         }
 
         private void TransmitterTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
-
-            for (int i = 0; i < form1.GetData.CAN_Message.Count; i++)
+            switch (form1.GetInterface)
             {
-                byte[] msg = Encoding.ASCII.GetBytes(form1.GetData.CAN_Message[i]);
-                Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData.Message_ID), msg, 8, Canlib.canMSG_EXT);
-                writeStatus = Canlib.canWriteSync(canHandle, 500);
+                case 1:
+                    Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
 
-                if (writeStatus < 0)
-                {
-                    Console.WriteLine("Writing file failed,  can status: " + writeStatus + 
-                                       "\nThe message is: " + form1.GetData.CAN_Message[i] +
-                                       "\nThe message ID is: " + form1.GetData.Message_ID);
+                    for (int i = 0; i < form1.GetData.CAN_Message.Count; i++)
+                    {
+                        byte[] msg = Encoding.ASCII.GetBytes(form1.GetData.CAN_Message[i]);
+                        Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData.Message_ID), msg, 8, Canlib.canMSG_EXT);
+                        writeStatus = Canlib.canWriteSync(canHandle, 500);
+                        tracker = true;
+
+                        if (writeStatus < 0)
+                        {
+                            tracker = false;
+                            Console.WriteLine("Writing file failed,  can status: " + writeStatus +
+                                               "\nThe message is: " + form1.GetData.CAN_Message[i] +
+                                               "\nThe message ID is: " + form1.GetData.Message_ID);
+                            break;
+                        }
+                    }
+
                     break;
-                }
+
+                case 2:
+
+                    for (int i = 0; i < form1.GetData.CAN_Message.Count; i++)
+                    {
+                        byte[] msg = Encoding.ASCII.GetBytes(form1.GetData.CAN_Message[i]);
+                        pCANMsg.DATA = msg;
+                        pCANMsg.ID = Convert.ToUInt32(form1.GetData.Message_ID);
+                        pCANMsg.LEN = Convert.ToByte(form1.GetData.Message_Length);
+                        
+                        pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
+                        tracker = true;
+
+                        if (pCANStatus < 0)
+                        {
+                            tracker = false;
+                            Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
+                                               "\nThe message is: " + form1.GetData.CAN_Message[i] +
+                                               "\nThe message ID is: " + form1.GetData.Message_ID);
+                            break;
+                        }
+                    }
+
+                    break;
             }
+
+            transmitterTimer.Enabled = false;
         }
 
         public void Close()
         {
+            switch (form1.GetInterface)
+            {
+                case 1:
+
+                    Canlib.canBusOff(canHandle);
+                    status = Canlib.canClose(canHandle);
+                    errorControl(status: this.status, location: "canClose: Close()");
+
+                    break;
+
+                case 2:
+                    
+                    PCANBasic.Uninitialize(peakHandle);
+                    break;
+            }
+
+            transmitterTimer.Stop();
             transmitterTimer.Enabled = false;
-            Canlib.canBusOff(canHandle);
-            status = Canlib.canClose(canHandle);
-            errorControl(status: this.status, location: "canClose: Close()");
         }
 
         private void errorControl(int handle = 1, Canlib.canStatus status = Canlib.canStatus.canOK, string location = "\0")
@@ -70,7 +147,7 @@ namespace CanLogger1
             {
                 string msg = "\0";
                 Canlib.canGetErrorText((Canlib.canStatus)handle, out msg);
-                Console.WriteLine("Handle error: " + msg);
+                Console.WriteLine("Handle error: " + msg + " The location is: " + location);
 
                 Environment.Exit(1);
                 return;

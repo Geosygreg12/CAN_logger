@@ -14,9 +14,11 @@ namespace CanLogger1
 {
     public partial class Form1 : Form
     {
+        CANTransmitterClass CANTransmitter;
         public Form1()
         {
             InitializeComponent();
+            CANTransmitter = new CANTransmitterClass();
         }
 
         private void BrowseButton_Click(object sender, EventArgs e)
@@ -83,13 +85,14 @@ namespace CanLogger1
             timer1.Enabled = false;
             timeLabel.Visible = false;
             timeUpdateText.Visible = false;
-            streamReader.Close();
+            if(streamReader != null) streamReader.Close();
             streamVar = 1;
             PauseButton.Visible = false;
             progressBar.Visible = false;
             progressLabel.Visible = false;
             status = false;
             listOfLoggedValues.Clear();
+            CANTransmitter.Close();
             data.Message_Time = 0;
             progressLabel.Text = "NO Transmission";
         }
@@ -168,7 +171,11 @@ namespace CanLogger1
                         if (startTime == messageTime) //for single transmission, is the message time = starttime? yes, transmit
                         {
                             //transmit current message
-                            if (status) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                            if (status)
+                            {
+                                CANTransmitter.Transmitter();
+                                Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                            }
 
                             if (messageTime <= previousTime) ReadCANLogFile();
                             else previousTime = (long)messageTime + timer1.Interval;
@@ -202,12 +209,20 @@ namespace CanLogger1
                     if (int.TryParse(timeText.Text, out startTime)) //get the start time
                     {
                         if (startTime <= messageTime)//transmit from start time to end of file
-                            if (status && tracker) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                            if (status && tracker)
+                            {
+                                CANTransmitter.Transmitter();
+                                Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                            } 
                     }
                     else
                     {
                         //transmit logged data
-                        if (status && tracker) Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                        if (status && tracker)
+                        {
+                            CANTransmitter.Transmitter();
+                            Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
+                        }
                     }
 
                     if (messageTime <= previousTime)
@@ -242,6 +257,24 @@ namespace CanLogger1
                     PauseButton.Text = "Pause";
                     break;
             }
+        }
+
+        private void InterfaceComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (status)
+            {
+                DialogResult result = MessageBox.Show("You just changed the interface, Transmission will stop now" +
+                            " You will have to restart the application", "Message", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+
+                if (result.Equals(DialogResult.OK))
+                {
+                    StopButton_Click(this, EventArgs.Empty);
+                    Environment.Exit(1);
+                }
+                else InterfaceComboBox.SelectedIndex = 1;
+            }
+
+            INTERFACE = InterfaceComboBox.SelectedIndex;
         }
     }
 }

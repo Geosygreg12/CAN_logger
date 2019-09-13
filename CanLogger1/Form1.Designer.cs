@@ -43,6 +43,8 @@
             this.PauseButton = new System.Windows.Forms.Button();
             this.timeLabel = new System.Windows.Forms.Label();
             this.timeUpdateText = new System.Windows.Forms.TextBox();
+            this.InterfaceComboBox = new System.Windows.Forms.ComboBox();
+            this.interfaceLabel = new System.Windows.Forms.Label();
             this.radioPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -182,11 +184,35 @@
             this.timeUpdateText.TabIndex = 16;
             this.timeUpdateText.Visible = false;
             // 
+            // InterfaceComboBox
+            // 
+            this.InterfaceComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.InterfaceComboBox.FormattingEnabled = true;
+            this.InterfaceComboBox.Items.AddRange(new object[] {
+            "KVASER",
+            "PEAK"});
+            this.InterfaceComboBox.Location = new System.Drawing.Point(142, 100);
+            this.InterfaceComboBox.Name = "InterfaceComboBox";
+            this.InterfaceComboBox.Size = new System.Drawing.Size(150, 24);
+            this.InterfaceComboBox.TabIndex = 17;
+            this.InterfaceComboBox.SelectedIndexChanged += new System.EventHandler(this.InterfaceComboBox_SelectedIndexChanged);
+            // 
+            // interfaceLabel
+            // 
+            this.interfaceLabel.AutoSize = true;
+            this.interfaceLabel.Location = new System.Drawing.Point(30, 103);
+            this.interfaceLabel.Name = "interfaceLabel";
+            this.interfaceLabel.Size = new System.Drawing.Size(106, 17);
+            this.interfaceLabel.TabIndex = 18;
+            this.interfaceLabel.Text = "Select Interface";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(789, 405);
+            this.Controls.Add(this.interfaceLabel);
+            this.Controls.Add(this.InterfaceComboBox);
             this.Controls.Add(this.timeUpdateText);
             this.Controls.Add(this.timeLabel);
             this.Controls.Add(this.PauseButton);
@@ -239,6 +265,9 @@
         private string loggedMessage = string.Empty;
         private System.Windows.Forms.Label timeLabel;
         private System.Windows.Forms.TextBox timeUpdateText;
+        private System.Windows.Forms.ComboBox InterfaceComboBox;
+        private System.Windows.Forms.Label interfaceLabel;
+        private System.Int32 INTERFACE = 1;
 
         public struct DataParameters
         {
@@ -249,6 +278,8 @@
         }
 
         public DataParameters GetData { get => this.data; }
+        public System.Int32 GetInterface { get => this.INTERFACE; }
+
     }
 }
 
