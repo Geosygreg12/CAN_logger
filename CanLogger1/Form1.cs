@@ -141,8 +141,8 @@ namespace CanLogger1
                         MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
                             MessageBoxIcon.Error);
 
-                    data.Channel_ID = listOfLoggedValues[CHANNEL_ID_INDEX];
-                    data.CAN_Message = new System.Collections.ArrayList();
+                    data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
+                    data.CAN_Message = new List<string>();
 
                     for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++) data.CAN_Message.Add(listOfLoggedValues[i]);
                 }

@@ -225,7 +225,7 @@
         private System.Windows.Forms.ProgressBar progressBar;
         private DataParameters data;
         private const System.Int32 TIME_INDEX = 0;
-        private const System.Int32 CHANNEL_ID_INDEX = 2;
+        private const System.Int32 MESSAGE_ID_INDEX = 2;
         private const System.Int32 LENGTH_BIT_INDEX = 5;
         private const System.Int32 MESSAGE_INDEX = 6;
         private System.Int64 streamLength;
@@ -244,8 +244,8 @@
         {
             public int Message_Length;
             public float Message_Time;
-            public System.Collections.ArrayList CAN_Message;
-            public string Channel_ID;
+            public System.Collections.Generic.List<string> CAN_Message;
+            public string Message_ID;
         }
 
         public DataParameters GetData { get => this.data; }
