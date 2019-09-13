@@ -5,8 +5,6 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Forms;
 using System.IO;
@@ -65,14 +63,14 @@ namespace CanLogger1
             {
                 if (!timer1.Enabled && !PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
                 timer1.Enabled = true;
+                timeLabel.Visible = true;
+                timeUpdateText.Visible = true;
                 PauseButton.Visible = true;
                 PauseButton.Text = "Pause";
                 Console.WriteLine("Transmission has started");
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
                 progressPercent = 0;
-                timeLabel.Visible = true;
-                timeUpdateText.Visible = true;
             }
             else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -80,17 +78,18 @@ namespace CanLogger1
         private void StopButton_Click(object sender, EventArgs e)
         {
             //reset the relevant params
+            Thread.Sleep(TimeSpan.Zero); //this is to enable all timer tasks to complete
             Console.WriteLine("Transmission has stopped");
             timer1.Enabled = false;
+            timeLabel.Visible = false;
+            timeUpdateText.Visible = false;
             streamReader.Close();
+            streamVar = 1;
             PauseButton.Visible = false;
             progressBar.Visible = false;
             progressLabel.Visible = false;
-            timeLabel.Visible = false;
-            timeUpdateText.Visible = false;
             status = false;
             listOfLoggedValues.Clear();
-            streamVar = 1;
             data.Message_Time = 0;
             progressLabel.Text = "NO Transmission";
         }
