@@ -240,13 +240,15 @@
         private System.Windows.Forms.Label timeLabel;
         private System.Windows.Forms.TextBox timeUpdateText;
 
-        private struct DataParameters
+        public struct DataParameters
         {
             public int Message_Length;
             public float Message_Time;
             public System.Collections.ArrayList CAN_Message;
             public string Channel_ID;
         }
+
+        public DataParameters GetData { get => this.data; }
     }
 }
 
