@@ -14,11 +14,10 @@ namespace CanLogger1
 {
     public partial class Form1 : Form
     {
-        CANTransmitterClass CANTransmitter;
+        public CANTransmitterClass CANTransmitter { get; set; }
         public Form1()
         {
             InitializeComponent();
-            CANTransmitter = new CANTransmitterClass();
         }
 
         private void BrowseButton_Click(object sender, EventArgs e)
@@ -209,11 +208,13 @@ namespace CanLogger1
                     if (int.TryParse(timeText.Text, out startTime)) //get the start time
                     {
                         if (startTime <= messageTime)//transmit from start time to end of file
+                        {
                             if (status && tracker)
                             {
                                 CANTransmitter.Transmitter();
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
-                            } 
+                            }
+                        } 
                     }
                     else
                     {

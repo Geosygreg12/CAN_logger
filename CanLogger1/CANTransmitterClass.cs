@@ -8,12 +8,12 @@ using canlibCLSNET;
 
 namespace CanLogger1
 {
-    class CANTransmitterClass
+    public class CANTransmitterClass
     {
         Timer transmitterTimer;
         Canlib.canStatus status;
         int canHandle;
-        Form1 form1 = new Form1();
+        public Form1 form1 = new Form1();
 
         ushort peakHandle;
         TPCANBaudrate pCANBaudrate;
@@ -22,7 +22,7 @@ namespace CanLogger1
 
         public bool tracker = false;
 
-        public CANTransmitterClass() { initialise(); } //public constructor
+        public CANTransmitterClass() { form1.CANTransmitter = this;  initialise(); } //public constructor
         public void Transmitter()
         {
             transmitterTimer.Enabled = true;
