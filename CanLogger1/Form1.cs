@@ -60,6 +60,15 @@ namespace CanLogger1
         private void StartButton_Click(object sender, EventArgs e)
         {
             //initialize the start up values
+            switch (InterfaceComboBox.SelectedIndex)
+            {
+                case 0:
+                case 1: break;
+                default:
+                    MessageBox.Show("Kindly Select an Interface from the Options given", "Message");
+                    return; 
+            }
+
             if (File.Exists(DirText.Text))
             {
                 if (!timer1.Enabled && !PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
@@ -89,9 +98,9 @@ namespace CanLogger1
             PauseButton.Visible = false;
             progressBar.Visible = false;
             progressLabel.Visible = false;
+            if (status) CANTransmitter.Close();
             status = false;
             listOfLoggedValues.Clear();
-            CANTransmitter.Close();
             data.Message_Time = 0;
             progressLabel.Text = "NO Transmission";
         }
@@ -272,7 +281,7 @@ namespace CanLogger1
                     StopButton_Click(this, EventArgs.Empty);
                     Environment.Exit(1);
                 }
-                else InterfaceComboBox.SelectedIndex = 1;
+                else InterfaceComboBox.SelectedIndex = 0;
             }
 
             INTERFACE = InterfaceComboBox.SelectedIndex;

@@ -267,7 +267,7 @@
         private System.Windows.Forms.TextBox timeUpdateText;
         private System.Windows.Forms.ComboBox InterfaceComboBox;
         private System.Windows.Forms.Label interfaceLabel;
-        private System.Int32 INTERFACE = 1;
+        private System.Int32 INTERFACE = 0;
 
         public struct DataParameters
         {

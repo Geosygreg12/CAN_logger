@@ -12,8 +12,7 @@ namespace CanLogger1
     {
         Timer transmitterTimer;
         Canlib.canStatus status;
-        int canHandle;
-        public Form1 form1 = new Form1();
+        int canHandle;       
 
         ushort peakHandle;
         TPCANBaudrate pCANBaudrate;
@@ -21,19 +20,21 @@ namespace CanLogger1
         TPCANStatus pCANStatus;
 
         public bool tracker = false;
+        public Form1 form1 = new Form1();
 
         public CANTransmitterClass() { form1.CANTransmitter = this;  initialise(); } //public constructor
         public void Transmitter()
         {
             transmitterTimer.Enabled = true;
             transmitterTimer.Start();
+            tracker = true;
         }
 
         private void initialise()
         {
             switch (form1.GetInterface)
             {
-                case 1:
+                case 0:
 
                     Canlib.canInitializeLibrary();
                     canHandle = Canlib.canOpenChannel(1, Canlib.canOPEN_EXCLUSIVE);
@@ -45,7 +46,7 @@ namespace CanLogger1
 
                     break;
 
-                case 2:
+                case 1:
 
                     peakHandle = PCANBasic.PCAN_USBBUS1;
                     pCANBaudrate = TPCANBaudrate.PCAN_BAUD_500K;
@@ -69,7 +70,7 @@ namespace CanLogger1
         {
             switch (form1.GetInterface)
             {
-                case 1:
+                case 0:
                     Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
                     byte[] msg = new byte[form1.GetData.Message_Length];
 
@@ -87,7 +88,7 @@ namespace CanLogger1
 
                         if (writeStatus < 0)
                         {
-                            tracker = false;
+                            //tracker = false;
                             Console.WriteLine("Writing file failed,  can status: " + writeStatus +
                                                "\nThe message is: " + form1.GetData.CAN_Message[i] +
                                                "\nThe message ID is: " + form1.GetData.Message_ID);
@@ -97,7 +98,7 @@ namespace CanLogger1
 
                     break;
 
-                case 2:
+                case 1:
                     byte[] Msg = new byte[form1.GetData.Message_Length];
 
                     for (int i = 0; i < form1.GetData.Message_Length; i++)
@@ -116,7 +117,7 @@ namespace CanLogger1
 
                         if (pCANStatus < 0)
                         {
-                            tracker = false;
+                            //tracker = false;
                             Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
                                                "\nThe message is: " + form1.GetData.CAN_Message[i] +
                                                "\nThe message ID is: " + form1.GetData.Message_ID);
@@ -134,7 +135,7 @@ namespace CanLogger1
         {
             switch (form1.GetInterface)
             {
-                case 1:
+                case 0:
 
                     Canlib.canBusOff(canHandle);
                     status = Canlib.canClose(canHandle);
@@ -142,7 +143,7 @@ namespace CanLogger1
 
                     break;
 
-                case 2:
+                case 1:
                     
                     PCANBasic.Uninitialize(peakHandle);
                     break;
@@ -150,6 +151,7 @@ namespace CanLogger1
 
             transmitterTimer.Stop();
             transmitterTimer.Enabled = false;
+            tracker = false;
         }
 
         private void errorControl(int handle = 1, Canlib.canStatus status = Canlib.canStatus.canOK, string location = "\0")
