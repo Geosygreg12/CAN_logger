@@ -71,10 +71,16 @@ namespace CanLogger1
             {
                 case 1:
                     Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
+                    byte[] msg = new byte[form1.GetData.Message_Length];
 
-                    for (int i = 0; i < form1.GetData.CAN_Message.Count; i++)
-                    {
-                        byte[] msg = Encoding.ASCII.GetBytes(form1.GetData.CAN_Message[i]);
+                    for (int i = 0; i < form1.GetData.Message_Length; i++)
+                    {     
+                        for (int j = 0; j < form1.GetData.Message_Length; j++)
+                        {
+                            byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j]);
+                            msg[j] = Byte;
+                        }
+
                         Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData.Message_ID), msg, 8, Canlib.canMSG_EXT);
                         writeStatus = Canlib.canWriteSync(canHandle, 500);
                         tracker = true;
@@ -92,11 +98,16 @@ namespace CanLogger1
                     break;
 
                 case 2:
+                    byte[] Msg = new byte[form1.GetData.Message_Length];
 
-                    for (int i = 0; i < form1.GetData.CAN_Message.Count; i++)
+                    for (int i = 0; i < form1.GetData.Message_Length; i++)
                     {
-                        byte[] msg = Encoding.ASCII.GetBytes(form1.GetData.CAN_Message[i]);
-                        pCANMsg.DATA = msg;
+                        for (int j = 0; j < form1.GetData.Message_Length; j++)
+                        {
+                            byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j]);
+                            Msg[j] = Byte;
+                        }
+                        pCANMsg.DATA = Msg;
                         pCANMsg.ID = Convert.ToUInt32(form1.GetData.Message_ID);
                         pCANMsg.LEN = Convert.ToByte(form1.GetData.Message_Length);
                         
