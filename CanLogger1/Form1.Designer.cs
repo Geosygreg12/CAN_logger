@@ -279,7 +279,6 @@
 
         public DataParameters GetData { get => this.data; }
         public System.Int32 GetInterface { get => this.INTERFACE; }
-
     }
 }
 

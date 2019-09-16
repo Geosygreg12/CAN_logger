@@ -65,7 +65,7 @@ namespace CanLogger1
             {
                 case 0:
                 case 1:
-                    CANTransmitter.initialise();
+                    if(!status) CANTransmitter.initialise();
                     break;
                 default:
                     MessageBox.Show("Kindly Select an Interface from the Options given", "Message");

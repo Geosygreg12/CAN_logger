@@ -37,7 +37,7 @@ namespace CanLogger1
                 case 0:
 
                     Canlib.canInitializeLibrary();
-                    canHandle = Canlib.canOpenChannel(1, Canlib.canOPEN_EXCLUSIVE);
+                    canHandle = Canlib.canOpenChannel(0, Canlib.canOPEN_EXCLUSIVE);
                     errorControl(handle: canHandle, location: "canOpenChannel: initialise()");
                     status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
                     errorControl(status: this.status, location: "canSetBusParams: initialise()");
@@ -74,55 +74,49 @@ namespace CanLogger1
                     Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
                     byte[] msg = new byte[form1.GetData.Message_Length];
 
-                    for (int i = 0; i < form1.GetData.Message_Length; i++)
-                    {     
-                        for (int j = 0; j < form1.GetData.Message_Length; j++)
-                        {
-                            byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j]);
-                            msg[j] = Byte;
-                        }
+                    for (int j = 0; j < form1.GetData.Message_Length; j++)
+                    {
+                        byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j], 16);
+                        msg[j] = Byte;
+                    }
 
-                        Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData.Message_ID), msg, 8, Canlib.canMSG_EXT);
-                        writeStatus = Canlib.canWriteSync(canHandle, 500);
-                        tracker = true;
+                    Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData.Message_ID, 16), msg, 8, Canlib.canMSG_EXT);
+                    writeStatus = Canlib.canWriteSync(canHandle, 500);
+                    tracker = true;
 
-                        if (writeStatus < 0)
-                        {
-                            //tracker = false;
-                            Console.WriteLine("Writing file failed,  can status: " + writeStatus +
-                                               "\nThe message is: " + form1.GetData.CAN_Message[i] +
-                                               "\nThe message ID is: " + form1.GetData.Message_ID);
-                            break;
-                        }
+                    if (writeStatus < 0)
+                    {
+                        //tracker = false;
+                        Console.WriteLine("Writing file failed,  can status: " + writeStatus +
+                                           "\nThe message is: " + form1.GetData.CAN_Message.ToString() +
+                                           "\nThe message ID is: " + form1.GetData.Message_ID);
+                        break;
                     }
 
                     break;
 
                 case 1:
                     byte[] Msg = new byte[form1.GetData.Message_Length];
-
-                    for (int i = 0; i < form1.GetData.Message_Length; i++)
+                    
+                    for (int j = 0; j < form1.GetData.Message_Length; j++)
                     {
-                        for (int j = 0; j < form1.GetData.Message_Length; j++)
-                        {
-                            byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j]);
-                            Msg[j] = Byte;
-                        }
-                        pCANMsg.DATA = Msg;
-                        pCANMsg.ID = Convert.ToUInt32(form1.GetData.Message_ID);
-                        pCANMsg.LEN = Convert.ToByte(form1.GetData.Message_Length);
-                        
-                        pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
-                        tracker = true;
+                        byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j], 16);
+                        Msg[j] = Byte;
+                    }
+                    pCANMsg.DATA = Msg;
+                    pCANMsg.ID = Convert.ToUInt32(form1.GetData.Message_ID, 16);
+                    pCANMsg.LEN = Convert.ToByte(form1.GetData.Message_Length);
 
-                        if (pCANStatus < 0)
-                        {
-                            //tracker = false;
-                            Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
-                                               "\nThe message is: " + form1.GetData.CAN_Message[i] +
-                                               "\nThe message ID is: " + form1.GetData.Message_ID);
-                            break;
-                        }
+                    pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
+                    tracker = true;
+
+                    if (pCANStatus < 0)
+                    {
+                        //tracker = false;
+                        Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
+                                           "\nThe message is: " + form1.GetData.CAN_Message.ToString() +
+                                           "\nThe message ID is: " + form1.GetData.Message_ID);
+                        break;
                     }
 
                     break;
