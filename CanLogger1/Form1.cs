@@ -14,9 +14,10 @@ namespace CanLogger1
 {
     public partial class Form1 : Form
     {
-        public CANTransmitterClass CANTransmitter { get; set; }
+        public CANTransmitterClass CANTransmitter = new CANTransmitterClass();
         public Form1()
         {
+            CANTransmitter.form1 = this;
             InitializeComponent();
         }
 
@@ -63,7 +64,9 @@ namespace CanLogger1
             switch (InterfaceComboBox.SelectedIndex)
             {
                 case 0:
-                case 1: break;
+                case 1:
+                    CANTransmitter.initialise();
+                    break;
                 default:
                     MessageBox.Show("Kindly Select an Interface from the Options given", "Message");
                     return; 

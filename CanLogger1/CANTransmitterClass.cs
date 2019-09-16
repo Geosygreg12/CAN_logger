@@ -20,9 +20,9 @@ namespace CanLogger1
         TPCANStatus pCANStatus;
 
         public bool tracker = false;
-        public Form1 form1 = new Form1();
+        public Form1 form1 { get; set; }
 
-        public CANTransmitterClass() { form1.CANTransmitter = this;  initialise(); } //public constructor
+        public CANTransmitterClass() { } //public constructor
         public void Transmitter()
         {
             transmitterTimer.Enabled = true;
@@ -30,7 +30,7 @@ namespace CanLogger1
             tracker = true;
         }
 
-        private void initialise()
+        public void initialise()
         {
             switch (form1.GetInterface)
             {
@@ -160,16 +160,21 @@ namespace CanLogger1
             {
                 string msg = "\0";
                 Canlib.canGetErrorText((Canlib.canStatus)handle, out msg);
-                Console.WriteLine("Handle error: " + msg + " The location is: " + location);
+                //System.Windows.Forms.MessageBox.Show("Handle error: " + msg + " \nThe location is: " + location, "Error",
+                //System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                Console.WriteLine("Handle error: " + msg + " \nThe location is: " + location);
 
-                Environment.Exit(1);
+                try { Environment.Exit(1); }
+                catch (Exception e) { Console.WriteLine("Error: " + e.Message); }
                 return;
             }
 
             if (status != Canlib.canStatus.canOK)
             {
                 Console.WriteLine("A Can operation has failed: " + location);
-                throw new Exception("CAN Operation cannot be executed at: " + location);
+                System.Windows.Forms.MessageBox.Show("A Can operation has failed: " + location, "Error",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                //throw new Exception("CAN Operation cannot be executed at: " + location);
             }
         }
     }
