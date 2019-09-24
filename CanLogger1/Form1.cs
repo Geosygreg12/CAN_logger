@@ -117,7 +117,7 @@ namespace CanLogger1
             if (e.KeyCode == Keys.Enter) StartButton_Click(sender, e);
         }
 
-        bool control = false;
+        bool control = false; //used to get when CAN data started in the log file
         private void ReadCANLogFile()
         {
             try
@@ -148,7 +148,7 @@ namespace CanLogger1
                     {
                         if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
                         {
-                            Thread.Sleep(1000);
+                            Thread.Sleep(500);
                             StopButton_Click(this, EventArgs.Empty);
                             MessageBox.Show("Transmission has finished", "Message"); //end transmission and return
 
@@ -203,7 +203,7 @@ namespace CanLogger1
                         if (startTime == messageTime) //for single transmission, is the message time = starttime? yes, transmit
                         {
                             //transmit current message
-                            if (status) //if the parameter are parsed successfully, then status is true
+                            if (status) //if the parameters/data are parsed successfully, then status is true
                             {
                                 CANTransmitter.Transmitter();
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
@@ -275,7 +275,7 @@ namespace CanLogger1
                     break;
             }
 
-            timeUpdateText.Text = messageTime.ToString(); //send live update to UI to keep track of message
+            timeUpdateText.Text = messageTime.ToString(); //send live update to UI to keep track of message time
         }
 
         private void PauseButton_Click(object sender, EventArgs e) //pause and continue transmission 
