@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using System.IO;
-
+using System.Diagnostics;
 
 namespace CanLogger1
 {
@@ -98,11 +98,14 @@ namespace CanLogger1
             timeUpdateText.Visible = false;
             if(streamReader != null) streamReader.Close();
             streamVar = 1;
+            previousTime = 0;
             PauseButton.Visible = false;
             progressBar.Visible = false;
             progressLabel.Visible = false;
             if (status) CANTransmitter.Close();
             status = false;
+            control = false;
+            tracker = false;
             listOfLoggedValues.Clear();
             data.Message_Time = 0;
             progressLabel.Text = "NO Transmission";
@@ -114,6 +117,7 @@ namespace CanLogger1
             if (e.KeyCode == Keys.Enter) StartButton_Click(sender, e);
         }
 
+        bool control = false;
         private void ReadCANLogFile()
         {
             try
@@ -126,7 +130,9 @@ namespace CanLogger1
                 progressBar.Value = progressPercent;
                 progressBar.Update();
 
-                if (!string.IsNullOrEmpty(loggedMessage)) if (loggedMessage.EndsWith("measurement")) status = true;
+                if (!string.IsNullOrEmpty(loggedMessage))
+                    if (loggedMessage.EndsWith("measurement")) { status = true; control = true; }
+                    else if (control) status = true;
 
                 if (status) //status is a bool that is used to indicate where CAN data starts in the log file
                 {
@@ -145,19 +151,32 @@ namespace CanLogger1
                             Thread.Sleep(1000);
                             StopButton_Click(this, EventArgs.Empty);
                             MessageBox.Show("Transmission has finished", "Message"); //end transmission and return
-                            return;
+
+                            status = false;
                         }
-                        else MessageBox.Show("Time is not a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        else
+                        {
+                            MessageBox.Show("Time is not a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                            status = false;
+                            StopButton_Click(this, EventArgs.Empty);
+                        }
                     }
 
                     if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
-                        MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
+                    {
+                        DialogResult dialogResult = MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
                             MessageBoxIcon.Error);
+
+                        status = false;
+                        if (dialogResult.Equals(DialogResult.OK)) return;
+                    }
 
                     data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
                     data.CAN_Message = new List<string>();
 
-                    for (int i = MESSAGE_INDEX; i < listOfLoggedValues.Count; i++) data.CAN_Message.Add(listOfLoggedValues[i]);
+                    for (int i = MESSAGE_INDEX; i < (MESSAGE_INDEX + data.Message_Length); i++)
+                        data.CAN_Message.Add(listOfLoggedValues[i]);
                 }
                 else loggedMessage = streamReader.ReadLine();
             }
@@ -168,11 +187,12 @@ namespace CanLogger1
         }
 
         bool tracker = false;
+        private Stopwatch stopwatch = new Stopwatch(); 
         private void Timer1_Tick(object sender, EventArgs e)
         {
             //get which radio button is checked
-            var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
-            float messageTime = (float)data.Message_Time * 1000;
+            var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
+            float messageTime = (float)data.Message_Time* 1000; //convert to milliseconds
 
             switch (Var.Name)
             {
@@ -189,14 +209,14 @@ namespace CanLogger1
                             }
 
                             if (messageTime <= previousTime) ReadCANLogFile();
-                            else previousTime = (long)messageTime + timer1.Interval;
+                            else previousTime = (long) messageTime + timer1.Interval;
                         }
                         else
                         {
                             if (startTime > messageTime) //else is start time still ahead? yes, read file
                             {
                                 ReadCANLogFile();
-                                previousTime = (long)messageTime + timer1.Interval;
+                                previousTime = (long) messageTime + timer1.Interval;
                             }
                             else //else we have passed requested time, stop transmission
                             {
@@ -214,28 +234,21 @@ namespace CanLogger1
                     break;
 
                 case "tillEndRadio":
-
                 default:
-
-                    if (int.TryParse(timeText.Text, out startTime)) //get the start time
+                    switch (int.TryParse(timeText.Text, out startTime))
                     {
-                        if (startTime <= messageTime)//transmit from start time to end of file
-                        {
+                        case true:
+                            if (startTime <= messageTime) goto default;
+                            break;
+
+                        case false:                      
+                        default:
                             if (status && tracker)
                             {
                                 CANTransmitter.Transmitter();
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                             }
-                        } 
-                    }
-                    else
-                    {
-                        //transmit logged data
-                        if (status && tracker)
-                        {
-                            CANTransmitter.Transmitter();
-                            Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
-                        }
+                            break;
                     }
 
                     if (messageTime <= previousTime)
@@ -245,10 +258,19 @@ namespace CanLogger1
                     }
                     else
                     {
-                        previousTime = (long)messageTime + timer1.Interval;
+                        if (stopwatch.IsRunning)
+                        {
+                            if (stopwatch.ElapsedMilliseconds >= (messageTime - previousTime))
+                            {
+                                previousTime = (long) messageTime + timer1.Interval;
+                                stopwatch.Stop();
+                                stopwatch.Reset();
+                            }
+                        }
+                        else stopwatch.Start();
+
                         tracker = false;
                     }
-
                     break;
             }
 
