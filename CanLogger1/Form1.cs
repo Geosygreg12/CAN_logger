@@ -186,8 +186,8 @@ namespace CanLogger1
             }
         }
 
-        bool tracker = false;
-        private Stopwatch stopwatch = new Stopwatch(); 
+        bool tracker = false; //tracks whenever we read from file to enable transmission
+        private Stopwatch stopwatch = new Stopwatch(); //makes sure transmitted messages are timed
         private void Timer1_Tick(object sender, EventArgs e)
         {
             //get which radio button is checked
@@ -202,7 +202,7 @@ namespace CanLogger1
                         if (startTime == messageTime) //for single transmission, is the message time = starttime? yes, transmit
                         {
                             //transmit current message
-                            if (status)
+                            if (status) //if the parameter are parsed successfully, then status is true
                             {
                                 CANTransmitter.Transmitter();
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
@@ -243,7 +243,7 @@ namespace CanLogger1
 
                         case false:                      
                         default:
-                            if (status && tracker)
+                            if (status && tracker) //status = did we read log file successfully?, tracker = have we read the log file? 
                             {
                                 CANTransmitter.Transmitter();
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
@@ -253,23 +253,23 @@ namespace CanLogger1
 
                     if (messageTime <= previousTime)
                     {
-                        tracker = true;
+                        tracker = true; //set tracker to true whenever we read the log file
                         ReadCANLogFile();
                     }
-                    else
+                    else //else set tracker to false
                     {
                         if (stopwatch.IsRunning)
                         {
                             if (stopwatch.ElapsedMilliseconds >= (messageTime - previousTime))
                             {
-                                previousTime = (long) messageTime + timer1.Interval;
+                                previousTime = (long) messageTime + timer1.Interval; //update previous time 
                                 stopwatch.Stop();
                                 stopwatch.Reset();
                             }
                         }
                         else stopwatch.Start();
 
-                        tracker = false;
+                        tracker = false; //set tracker to false if we have not read the log file
                     }
                     break;
             }
@@ -277,7 +277,7 @@ namespace CanLogger1
             timeUpdateText.Text = messageTime.ToString(); //send live update to UI to keep track of message
         }
 
-        private void PauseButton_Click(object sender, EventArgs e)
+        private void PauseButton_Click(object sender, EventArgs e) //pause and continue transmission 
         {
             switch (PauseButton.Text)
             {
@@ -294,7 +294,7 @@ namespace CanLogger1
             }
         }
 
-        private void InterfaceComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void InterfaceComboBox_SelectedIndexChanged(object sender, EventArgs e) //which can interface is selected?
         {
             if (status)
             {
