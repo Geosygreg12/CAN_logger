@@ -170,6 +170,7 @@ namespace CanLogger1
 
                         status = false;
                         if (dialogResult.Equals(DialogResult.OK)) return;
+                        else StopButton_Click(this, EventArgs.Empty);
                     }
 
                     data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
