@@ -122,7 +122,7 @@ namespace CanLogger1
         {
             try
             {
-                streamLength = (long)(streamReader.BaseStream.Length / 51.3);
+                streamLength = (long)(streamReader.BaseStream.Length / 50);
 
                 if (progressPercent <= 99) progressPercent = (int)((streamVar++ * 100) / streamLength);
 
@@ -143,6 +143,11 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
+                    if (listOfLoggedValues.Contains("Tx"))
+                    {
+                        status = false;
+                        return;
+                    }                    
                     //initialize the dataparams with values from the log file
                     if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
                     {
@@ -163,15 +168,7 @@ namespace CanLogger1
                         }
                     }
 
-                    if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length))
-                    {
-                        DialogResult dialogResult = MessageBox.Show("Error in Log file!\nCheck the bit length", "Error", MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
-
-                        status = false;
-                        if (dialogResult.Equals(DialogResult.OK)) return;
-                        else StopButton_Click(this, EventArgs.Empty);
-                    }
+                    if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) status = false;
 
                     data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
                     data.CAN_Message = new List<string>();
@@ -200,22 +197,31 @@ namespace CanLogger1
                 case "singleRadio":
                     if (int.TryParse(timeText.Text, out startTime))
                     {
-                        if (startTime == messageTime) //for single transmission, is the message time = starttime? yes, transmit
+                        if (((int) (messageTime/startTime)) == 1) //for single transmission, is the message time approx = starttime? yes, transmit
                         {
                             //transmit current message
-                            if (status) //if the parameters/data are parsed successfully, then status is true
+                            if (status && tracker) //if the parameters/data are parsed successfully, then status is true
                             {
                                 CANTransmitter.Transmitter();
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                             }
 
-                            if (messageTime <= previousTime) ReadCANLogFile();
-                            else previousTime = (long) messageTime + timer1.Interval;
+                            if (messageTime <= previousTime)
+                            {
+                                tracker = true;
+                                ReadCANLogFile();
+                            }
+                            else
+                            {
+                                tracker = false;
+                                previousTime = (long)messageTime + timer1.Interval;
+                            }
                         }
                         else
                         {
                             if (startTime > messageTime) //else is start time still ahead? yes, read file
                             {
+                                tracker = true;
                                 ReadCANLogFile();
                                 previousTime = (long) messageTime + timer1.Interval;
                             }
