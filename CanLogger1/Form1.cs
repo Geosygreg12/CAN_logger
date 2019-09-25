@@ -197,7 +197,7 @@ namespace CanLogger1
                 case "singleRadio":
                     if (int.TryParse(timeText.Text, out startTime))
                     {
-                        if (((int) (messageTime/startTime)) == 1) //for single transmission, is the message time approx = starttime? yes, transmit
+                        if (startTime == Math.Round(messageTime / 1000, 0) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
                         {
                             //transmit current message
                             if (status && tracker) //if the parameters/data are parsed successfully, then status is true
