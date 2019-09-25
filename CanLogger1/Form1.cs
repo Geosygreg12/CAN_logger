@@ -204,15 +204,12 @@ namespace CanLogger1
                 case "singleRadio":
                     if (int.TryParse(timeText.Text, out startTime))
                     {
-                        if (startTime == Math.Round(Math.Floor(messageTime / 1000), 0) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
+                        if (startTime == Math.Floor(messageTime / 1000) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
                         {
                             //transmit current message
                             if (status && tracker) //if the parameters/data are parsed successfully, then status is true
                             {
-                                try { CANTransmitter.Transmitter(); }
-                                catch (Exception ex)
-                                { Console.WriteLine("Error has occured!!!, Error: {0}", ex.Message); }
-                                
+                                CANTransmitter.Transmitter(); 
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                             }
 
@@ -262,16 +259,13 @@ namespace CanLogger1
                         default:
                             if (status && tracker) //status = did we read log file successfully?, tracker = have we read the log file? 
                             {
-                                try { CANTransmitter.Transmitter(); }
-                                catch (Exception ex)
-                                { Console.WriteLine("Error has occured!!!, Error: {0}", ex.Message); }
-
+                                CANTransmitter.Transmitter(); 
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                             }
                             break;
                     }
 
-                    if (Math.Round(Math.Floor(messageTime / 1000), 0) * 1000 <= previousTime)
+                    if (Math.Floor(messageTime / 1000) * 1000 <= previousTime)
                     {
                         tracker = true; //set tracker to true whenever we read the log file
                         ReadCANLogFile();
@@ -280,7 +274,7 @@ namespace CanLogger1
                     {
                         if (stopwatch.IsRunning)
                         {
-                            if (stopwatch.ElapsedMilliseconds >= (Math.Round(Math.Floor(messageTime / 1000), 0) * 1000 - previousTime))
+                            if (stopwatch.ElapsedMilliseconds >= (Math.Floor(messageTime / 1000) * 1000 - previousTime))
                             {
                                 previousTime = (long) messageTime + timer1.Interval; //update previous time 
                                 stopwatch.Stop();
@@ -330,6 +324,12 @@ namespace CanLogger1
             }
 
             INTERFACE = InterfaceComboBox.SelectedIndex;
+        }
+
+        private void TimeText_MouseClick(object sender, MouseEventArgs e)
+        {
+            timeText.SelectAll();
+            timeText.Focus(); 
         }
     }
 }

@@ -129,6 +129,7 @@
             this.timeText.Size = new System.Drawing.Size(284, 27);
             this.timeText.TabIndex = 10;
             this.timeText.Text = "Enter the time in milliseconds";
+            this.timeText.MouseClick += new System.Windows.Forms.MouseEventHandler(this.TimeText_MouseClick);
             this.timeText.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TimeText_KeyDown);
             // 
             // progressLabel

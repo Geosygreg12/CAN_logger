@@ -76,7 +76,9 @@ namespace CanLogger1
 
                     for (int j = 0; j < form1.GetData.Message_Length; j++)
                     {
-                        byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j], 16);
+                        byte Byte = 0;
+                        try { Byte = Convert.ToByte(form1.GetData.CAN_Message[j], 16); }
+                        catch (Exception exc) { Console.WriteLine("Error :" + exc.Message); }
                         msg[j] = Byte;
                     }
 
