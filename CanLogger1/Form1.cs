@@ -65,7 +65,7 @@ namespace CanLogger1
             {
                 case 0:
                 case 1:
-                    if(!status) CANTransmitter.initialise();
+                    if(!timer1.Enabled && !PauseButton.Visible) CANTransmitter.initialise();
                     break;
                 default:
                     MessageBox.Show("Kindly Select an Interface from the Options given", "Message");
@@ -127,8 +127,11 @@ namespace CanLogger1
                 if (progressPercent <= 99) progressPercent = (int)((streamVar++ * 100) / streamLength);
 
                 progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
-                progressBar.Value = progressPercent;
-                progressBar.Update();
+                if (progressBar.Maximum >= progressPercent)
+                {
+                    progressBar.Value = progressPercent;
+                    progressBar.Update();
+                }
 
                 if (!string.IsNullOrEmpty(loggedMessage))
                     if (loggedMessage.EndsWith("measurement")) { status = true; control = true; }
@@ -143,7 +146,7 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
-                    if (listOfLoggedValues.Contains("Tx"))
+                    if (!listOfLoggedValues.Contains("Rx"))
                     {
                         status = false;
                         return;
@@ -161,14 +164,17 @@ namespace CanLogger1
                         }
                         else
                         {
-                            MessageBox.Show("Time is not a real number", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
                             status = false;
-                            StopButton_Click(this, EventArgs.Empty);
+                            if (streamReader.Peek() < 0)
+                            {
+                                StopButton_Click(this, EventArgs.Empty);
+                                MessageBox.Show("Transmission has finished", "Message"); //end transmission and return
+                            } 
+                            return;
                         }
                     }
 
-                    if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) status = false;
+                    if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) { status = false; return; } 
 
                     data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
                     data.CAN_Message = new List<string>();
@@ -180,6 +186,7 @@ namespace CanLogger1
             }
             catch (Exception exception)
             {
+                status = false;
                 Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
             }
         }
@@ -197,12 +204,15 @@ namespace CanLogger1
                 case "singleRadio":
                     if (int.TryParse(timeText.Text, out startTime))
                     {
-                        if (startTime == Math.Round(messageTime / 1000, 0) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
+                        if (startTime == Math.Round(Math.Floor(messageTime / 1000), 0) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
                         {
                             //transmit current message
                             if (status && tracker) //if the parameters/data are parsed successfully, then status is true
                             {
-                                CANTransmitter.Transmitter();
+                                try { CANTransmitter.Transmitter(); }
+                                catch (Exception ex)
+                                { Console.WriteLine("Error has occured!!!, Error: {0}", ex.Message); }
+                                
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                             }
 
@@ -252,13 +262,16 @@ namespace CanLogger1
                         default:
                             if (status && tracker) //status = did we read log file successfully?, tracker = have we read the log file? 
                             {
-                                CANTransmitter.Transmitter();
+                                try { CANTransmitter.Transmitter(); }
+                                catch (Exception ex)
+                                { Console.WriteLine("Error has occured!!!, Error: {0}", ex.Message); }
+
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                             }
                             break;
                     }
 
-                    if (messageTime <= previousTime)
+                    if (Math.Round(Math.Floor(messageTime / 1000), 0) * 1000 <= previousTime)
                     {
                         tracker = true; //set tracker to true whenever we read the log file
                         ReadCANLogFile();
@@ -267,7 +280,7 @@ namespace CanLogger1
                     {
                         if (stopwatch.IsRunning)
                         {
-                            if (stopwatch.ElapsedMilliseconds >= (messageTime - previousTime))
+                            if (stopwatch.ElapsedMilliseconds >= (Math.Round(Math.Floor(messageTime / 1000), 0) * 1000 - previousTime))
                             {
                                 previousTime = (long) messageTime + timer1.Interval; //update previous time 
                                 stopwatch.Stop();

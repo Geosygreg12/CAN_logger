@@ -37,7 +37,7 @@ namespace CanLogger1
                 case 0:
 
                     Canlib.canInitializeLibrary();
-                    canHandle = Canlib.canOpenChannel(0, Canlib.canOPEN_EXCLUSIVE);
+                    canHandle = Canlib.canOpenChannel(0, Canlib.canOPEN_ACCEPT_VIRTUAL);
                     errorControl(handle: canHandle, location: "canOpenChannel: initialise()");
                     status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
                     errorControl(status: this.status, location: "canSetBusParams: initialise()");
@@ -130,11 +130,10 @@ namespace CanLogger1
             switch (form1.GetInterface)
             {
                 case 0:
-
                     Canlib.canBusOff(canHandle);
                     status = Canlib.canClose(canHandle);
                     errorControl(status: this.status, location: "canClose: Close()");
-
+                    canHandle = 0;
                     break;
 
                 case 1:
@@ -154,17 +153,11 @@ namespace CanLogger1
             {
                 string msg = "\0";
                 Canlib.canGetErrorText((Canlib.canStatus)handle, out msg);
-                System.Windows.Forms.DialogResult dialogResult = System.Windows.Forms.MessageBox.Show("Handle error: " + msg + " \nThe location is: " + location, "Error",
-                System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                //System.Windows.Forms.DialogResult dialogResult = System.Windows.Forms.MessageBox.Show("Handle error: " + msg + " \nThe location is: " + location, "Error",
+                //System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 Console.WriteLine("Handle error: " + msg + " \nThe location is: " + location);
 
-                try
-                {
-                    //if (dialogResult.Equals(System.Windows.Forms.DialogResult.OK)) { }
-                    Environment.Exit(1);
-                }
-                catch (Exception e) { Console.WriteLine("Error: " + e.Message); }
-                return;
+                Environment.Exit(1);
             }
 
             if (status != Canlib.canStatus.canOK)
