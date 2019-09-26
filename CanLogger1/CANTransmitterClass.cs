@@ -10,7 +10,6 @@ namespace CanLogger1
 {
     public class CANTransmitterClass
     {
-        Timer transmitterTimer;
         Canlib.canStatus status;
         int canHandle;       
 
@@ -22,16 +21,19 @@ namespace CanLogger1
         public bool tracker = false;
         public Form1 form1 { get; set; }
 
-        public CANTransmitterClass() { } //public constructor
+        public CANTransmitterClass() //public constructor
+        {
+            
+        } 
         public void Transmitter()
         {
-            transmitterTimer.Enabled = true;
-            transmitterTimer.Start();
             tracker = true;
         }
 
         public void initialise()
         {
+            form1.transmitTimeReached += TransmitterTimer_Elapsed;
+
             switch (form1.GetInterface)
             {
                 case 0:
@@ -59,30 +61,25 @@ namespace CanLogger1
 
                     break;
             }
-
-            transmitterTimer = new Timer();
-            transmitterTimer.Interval = 1;
-            transmitterTimer.Elapsed += TransmitterTimer_Elapsed;
-            transmitterTimer.Enabled = false;
         }
 
-        private void TransmitterTimer_Elapsed(object sender, ElapsedEventArgs e)
+        public void TransmitterTimer_Elapsed(object sender, EventArgs e)
         {
             switch (form1.GetInterface)
             {
                 case 0:
                     Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
-                    byte[] msg = new byte[form1.GetData.Message_Length];
+                    byte[] msg = new byte[form1.GetData[0].Message_Length];
 
-                    for (int j = 0; j < form1.GetData.Message_Length; j++)
+                    for (int j = 0; j < form1.GetData[0].Message_Length; j++)
                     {
                         byte Byte = 0;
-                        try { Byte = Convert.ToByte(form1.GetData.CAN_Message[j], 16); }
+                        try { Byte = Convert.ToByte(form1.GetData[0].CAN_Message[j], 16); }
                         catch (Exception exc) { Console.WriteLine("Error :" + exc.Message); }
                         msg[j] = Byte;
                     }
 
-                    Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData.Message_ID, 16), msg, 8, Canlib.canMSG_EXT);
+                    Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData[0].Message_ID, 16), msg, 8, Canlib.canMSG_EXT);
                     writeStatus = Canlib.canWriteSync(canHandle, 500);
                     tracker = true;
 
@@ -90,24 +87,24 @@ namespace CanLogger1
                     {
                         //tracker = false;
                         Console.WriteLine("Writing file failed,  can status: " + writeStatus +
-                                           "\nThe message is: " + form1.GetData.CAN_Message.ToString() +
-                                           "\nThe message ID is: " + form1.GetData.Message_ID);
-                        break;
+                                           "\nThe message is: " + form1.GetData[0].CAN_Message.ToString() +
+                                           "\nThe message ID is: " + form1.GetData[0].Message_ID);
+                        return;
                     }
 
                     break;
 
                 case 1:
-                    byte[] Msg = new byte[form1.GetData.Message_Length];
+                    byte[] Msg = new byte[form1.GetData[0].Message_Length];
                     
-                    for (int j = 0; j < form1.GetData.Message_Length; j++)
+                    for (int j = 0; j < form1.GetData[0].Message_Length; j++)
                     {
-                        byte Byte = Convert.ToByte(form1.GetData.CAN_Message[j], 16);
+                        byte Byte = Convert.ToByte(form1.GetData[0].CAN_Message[j], 16);
                         Msg[j] = Byte;
                     }
                     pCANMsg.DATA = Msg;
-                    pCANMsg.ID = Convert.ToUInt32(form1.GetData.Message_ID, 16);
-                    pCANMsg.LEN = Convert.ToByte(form1.GetData.Message_Length);
+                    pCANMsg.ID = Convert.ToUInt32(form1.GetData[0].Message_ID, 16);
+                    pCANMsg.LEN = Convert.ToByte(form1.GetData[0].Message_Length);
 
                     pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
                     tracker = true;
@@ -116,15 +113,15 @@ namespace CanLogger1
                     {
                         //tracker = false;
                         Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
-                                           "\nThe message is: " + form1.GetData.CAN_Message.ToString() +
-                                           "\nThe message ID is: " + form1.GetData.Message_ID);
-                        break;
+                                           "\nThe message is: " + form1.GetData[0].CAN_Message.ToString() +
+                                           "\nThe message ID is: " + form1.GetData[0].Message_ID);
+                        return;
                     }
 
                     break;
             }
 
-            transmitterTimer.Enabled = false;
+            if(form1.GetData.Count > 0) form1.GetData.RemoveAt(0);
         }
 
         public void Close()
@@ -144,8 +141,6 @@ namespace CanLogger1
                     break;
             }
 
-            transmitterTimer.Stop();
-            transmitterTimer.Enabled = false;
             tracker = false;
         }
 

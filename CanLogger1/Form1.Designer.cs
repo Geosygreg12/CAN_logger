@@ -269,16 +269,17 @@
         private System.Windows.Forms.ComboBox InterfaceComboBox;
         private System.Windows.Forms.Label interfaceLabel;
         private System.Int32 INTERFACE = 0;
+        private System.Collections.Generic.List<DataParameters> canData = new System.Collections.Generic.List<DataParameters>();
 
         public struct DataParameters
         {
             public int Message_Length;
             public float Message_Time;
-            public System.Collections.Generic.List<string> CAN_Message;
+            public System.String[] CAN_Message;
             public string Message_ID;
         }
 
-        public DataParameters GetData { get => this.data; }
+        public System.Collections.Generic.List<DataParameters> GetData { get => this.canData; }
         public System.Int32 GetInterface { get => this.INTERFACE; }
     }
 }
