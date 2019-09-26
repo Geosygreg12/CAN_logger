@@ -75,7 +75,7 @@ namespace CanLogger1
             if (File.Exists(DirText.Text))
             {
                 if (!timer1.Enabled && !PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
-                timer1.Enabled = true;
+                //timer1.Enabled = true;
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
                 PauseButton.Visible = true;
@@ -86,8 +86,18 @@ namespace CanLogger1
                 progressPercent = 0;
             }
             else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            Thread T = new Thread(newFunction);
+            T.Start();
         }
 
+        private void newFunction()
+        {
+            while (timeLabel.Visible)
+            {
+                Timer1_Tick(this, EventArgs.Empty);
+            }
+        }
         private void StopButton_Click(object sender, EventArgs e)
         {
             //reset the relevant params
@@ -127,12 +137,16 @@ namespace CanLogger1
 
                 if (progressPercent <= 99) progressPercent = (int)((streamVar++ * 100) / streamLength);
 
-                if (progressBar.Maximum >= progressPercent)
-                {
-                    progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
-                    progressBar.Value = progressPercent;
-                    progressBar.Update();
-                }
+                //if (!tracker)
+                //{
+                //    if (progressBar.Maximum >= progressPercent)
+                //    {
+                //        progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
+                //        progressBar.Value = progressPercent;
+                //        progressBar.Update();
+                //    }
+                //}
+                
 
                 if (!string.IsNullOrEmpty(loggedMessage))
                     if (loggedMessage.EndsWith("measurement")) { status = true; control = true; }
@@ -147,13 +161,13 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
-                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
-                    {
-                        progressLabel.Text = "Waiting for transmission to finish...";
-                        tracker = true;
-                        status = false;
-                        return;
-                    }
+                    //if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
+                    //{
+                    //    progressLabel.Text = "Waiting for transmission to finish...";
+                    //    tracker = true;
+                    //    status = false;
+                    //    return;
+                    //}
 
                     if (!listOfLoggedValues.Contains("Rx"))
                     {
@@ -198,6 +212,7 @@ namespace CanLogger1
             var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
             float messageTime = 0;
             if (canData.Count > 0) messageTime = (float)canData[0].Message_Time * 1000;
+            long previousMessageTime = 0;
 
             switch (Var.Name)
             {
@@ -241,18 +256,18 @@ namespace CanLogger1
 
                         case false:                      
                         default:
-                            if ((messageTime <= previousTime) && (canData.Count > 0)) 
+                            if ((messageTime <= previousTime) && (canData.Count > 0))
                             {
                                 Console.WriteLine("The time index is: " + canData[0].Message_Time);
                                 CANTransmitter.TransmitterTimer_Elapsed(this, EventArgs.Empty);
+                                //OnTransmitTimeReached();
                             }
                             else if (stopwatch.IsRunning)
                             {
-                                if (stopwatch.ElapsedMilliseconds >= (Math.Floor(messageTime / 1000) * 1000 - previousTime))
+                                if (stopwatch.ElapsedMilliseconds >= ((long)messageTime - previousTime))
                                 {
-                                    previousTime = (long) messageTime + timer1.Interval; //update previous time 
-                                    stopwatch.Stop();
-                                    stopwatch.Reset();
+                                    previousTime = (long)messageTime + timer1.Interval; //update previous time 
+                                    stopwatch.Restart();
                                 }
                             }
                             else stopwatch.Start();
@@ -261,7 +276,8 @@ namespace CanLogger1
                     break;
             }
 
-            timeUpdateText.Text = messageTime.ToString(); //send live update to UI to keep track of message time
+            //timeUpdateText.Text = messageTime.ToString(); //send live update to UI to keep track of message time
+            
             ReadCANLogFile();
         }
 
@@ -304,6 +320,18 @@ namespace CanLogger1
         {
             timeText.SelectAll();
             timeText.Focus(); 
+        }
+
+        public delegate void transmitTimeEventHandler(object source, EventArgs e);
+
+        public event transmitTimeEventHandler transmitTimeReached;
+
+        protected virtual void OnTransmitTimeReached()
+        {
+            if (transmitTimeReached != null)
+            {
+                transmitTimeReached(this, EventArgs.Empty);
+            }
         }
     }
 }

@@ -32,6 +32,8 @@ namespace CanLogger1
 
         public void initialise()
         {
+            form1.transmitTimeReached += TransmitterTimer_Elapsed;
+
             switch (form1.GetInterface)
             {
                 case 0:
