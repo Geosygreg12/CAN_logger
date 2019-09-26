@@ -147,26 +147,22 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
+                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
+                    {
+                        progressLabel.Text = "Waiting for transmission to finish...";
+                        tracker = true;
+                        status = false;
+                        return;
+                    }
+
                     if (!listOfLoggedValues.Contains("Rx"))
                     {
                         status = false;
                         return;
-                    }                    
-                    //initialize the dataparams with values from the log file
-                    if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time))
-                    {
-                        if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
-                        {
-                            progressLabel.Text = "Waiting for transmission to finish...";
-                            tracker = true;
-                            return;
-                        }
-                        else
-                        {
-                            status = false;
-                            return;
-                        }
                     }
+
+                    //initialize the dataparams with values from the log file
+                    if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time)) { status = false; return; }
 
                     if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) { status = false; return; } 
 
@@ -192,7 +188,7 @@ namespace CanLogger1
         private void Timer1_Tick(object sender, EventArgs e)
         {
             //get which radio button is checked
-            if (canData.Count == 0 && control && tracker)
+            if (canData.Count == 0 && control && tracker && !status)
             {
                 StopButton_Click(this, EventArgs.Empty);
                 MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
