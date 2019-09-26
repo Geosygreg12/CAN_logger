@@ -32,8 +32,6 @@ namespace CanLogger1
 
         public void initialise()
         {
-            form1.transmitTimeReached += TransmitterTimer_Elapsed;
-
             switch (form1.GetInterface)
             {
                 case 0:
@@ -69,7 +67,9 @@ namespace CanLogger1
             {
                 case 0:
                     Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
-                    byte[] msg = new byte[form1.GetData[0].Message_Length];
+                    byte[] msg;
+                    if (form1.GetData.Count > 0) msg = new byte[form1.GetData[0].Message_Length];
+                    else { msg = null; return; }
 
                     for (int j = 0; j < form1.GetData[0].Message_Length; j++)
                     {

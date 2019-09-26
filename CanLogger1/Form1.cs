@@ -102,10 +102,10 @@ namespace CanLogger1
             PauseButton.Visible = false;
             progressBar.Visible = false;
             progressLabel.Visible = false;
-            if (status) CANTransmitter.Close();
+            if (control || tracker) CANTransmitter.Close();
             status = false;
             control = false;
-            //tracker = false;
+            tracker = false;
             listOfLoggedValues.Clear();
             canData.Clear();
             data.Message_Time = 0;
@@ -210,7 +210,7 @@ namespace CanLogger1
                             if (control && (canData.Count > 0)) //if the parameters/data are parsed successfully, then status is true
                             {
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
-                                OnTransmitTimeReached();
+                                CANTransmitter.TransmitterTimer_Elapsed(this, EventArgs.Empty);
                             }
                         }
                         else
@@ -241,16 +241,16 @@ namespace CanLogger1
 
                         case false:                      
                         default:
-                            if ((Math.Floor(messageTime / 1000) * 1000 <= previousTime) && (canData.Count > 0)) 
+                            if ((messageTime <= previousTime) && (canData.Count > 0)) 
                             {
                                 Console.WriteLine("The time index is: " + canData[0].Message_Time);
-                                OnTransmitTimeReached();
+                                CANTransmitter.TransmitterTimer_Elapsed(this, EventArgs.Empty);
                             }
                             else if (stopwatch.IsRunning)
                             {
                                 if (stopwatch.ElapsedMilliseconds >= (Math.Floor(messageTime / 1000) * 1000 - previousTime))
                                 {
-                                    previousTime = (long)Math.Floor(messageTime / 1000) * 1000 + timer1.Interval; //update previous time 
+                                    previousTime = (long) messageTime + timer1.Interval; //update previous time 
                                     stopwatch.Stop();
                                     stopwatch.Reset();
                                 }
@@ -304,16 +304,6 @@ namespace CanLogger1
         {
             timeText.SelectAll();
             timeText.Focus(); 
-        }
-
-        public delegate void transmitTimeEventHandler(object source, EventArgs e);
-
-        public event transmitTimeEventHandler transmitTimeReached;
-
-        protected virtual void OnTransmitTimeReached()
-        {
-            if (transmitTimeReached != null)
-                transmitTimeReached(this, EventArgs.Empty);
         }
     }
 }
