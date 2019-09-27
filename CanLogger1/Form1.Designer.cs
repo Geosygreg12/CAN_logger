@@ -108,6 +108,7 @@
             this.startButton.Text = "START";
             this.startButton.UseVisualStyleBackColor = true;
             this.startButton.Click += new System.EventHandler(this.StartButton_Click);
+            //this.startButton.Click += stpBtn;
             // 
             // stopButton
             // 
@@ -262,8 +263,10 @@
         private System.Windows.Forms.Label interfaceLabel;
         private System.Int32 INTERFACE = 0;
         private System.Collections.Generic.List<DataParameters> canData = new System.Collections.Generic.List<DataParameters>();
-        private System.Threading.Thread thread;
-        private System.Boolean pause = false;
+        private System.Threading.Thread readLogthread;
+        private System.Threading.Thread transmitLogthread;
+        private System.Boolean play = false;
+        System.Windows.Forms.RadioButton Var;
 
         public struct DataParameters
         {
@@ -272,14 +275,7 @@
             public System.String[] CAN_Message;
             public string Message_ID;
         }
-        private void backgroundFunction()
-        {
-            while (timeLabel.Visible && pause)
-            {
-                readLogTransmitEnable();
-            }
-        }
-
+        
         public System.Collections.Generic.List<DataParameters> GetData { get => this.canData; }
         public System.Int32 GetInterface { get => this.INTERFACE; }
     }

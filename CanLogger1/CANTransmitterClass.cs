@@ -112,7 +112,10 @@ namespace CanLogger1
                     break;
             }
 
-            if(form1.GetData.Count > 0) form1.GetData.RemoveAt(0);
+            if (form1.GetData.Count > 0)
+            {
+                form1.GetData.RemoveAt(0);
+            }
         }
 
         public void Close()

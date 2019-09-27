@@ -9,6 +9,9 @@ using System.Threading;
 using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
+using System.Windows.Threading;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace CanLogger1
 {
@@ -22,6 +25,23 @@ namespace CanLogger1
             InitializeComponent();
         }
 
+        private void InterfaceComboBox_SelectedIndexChanged(object sender, EventArgs e) //which can interface is selected?
+        {
+            if (status)
+            {
+                DialogResult result = MessageBox.Show("You just changed the interface, Transmission will stop now" +
+                            " You will have to restart the application", "Message", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+
+                if (result.Equals(DialogResult.OK))
+                {
+                    StopButton_Click(this, EventArgs.Empty);
+                    Environment.Exit(1);
+                }
+                else InterfaceComboBox.SelectedIndex = 0;
+            }
+
+            INTERFACE = InterfaceComboBox.SelectedIndex;
+        }
         private void BrowseButton_Click(object sender, EventArgs e)
         {
             try
@@ -76,6 +96,7 @@ namespace CanLogger1
             if (File.Exists(DirText.Text))
             {
                 if (!PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
+                streamLength = (long)(streamReader.BaseStream.Length / 50);
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
                 PauseButton.Visible = true;
@@ -87,18 +108,61 @@ namespace CanLogger1
             }
             else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            thread = new Thread(backgroundFunction);
-            pause = true;
-            thread.Start();
+            play = true;
+            Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
+
+            readLogthread = new Thread(backgroundFuncToReadLog);
+            transmitLogthread = new Thread(backgroundFuncToTransmitLog);
+            readLogthread.Start(); transmitLogthread.Start();
+        }
+        private async void stpBtn(object source, EventArgs e)
+        {
+            CancellationTokenSource tokenSource = new CancellationTokenSource();
+
+            CancellationToken token = tokenSource.Token;
+
+            Task t;
+            var tasks = new ConcurrentBag<Task>();
+
+            t = Task.Run(() =>
+            {
+                //Task tc1 = Task.Run(() => backgroundFuncToReadLog(token), token);
+                //Task tc2 = Task.Run(() => backgroundFuncToTransmitLog(token), token);
+
+                //tasks.Add(tc1);
+                //tasks.Add(tc2);
+            }, token);
+
+            tasks.Add(t);
+
+            if (!play)
+            {
+                tokenSource.Cancel();
+                Console.WriteLine("\nTask cancellation requested.");
+            }
+
+            try
+            {
+                await Task.WhenAll(tasks.ToArray());
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine($"\n{nameof(OperationCanceledException)} thrown\n");
+            }
+            finally
+            {
+                tokenSource.Dispose();
+            }
         }
 
-        
         private void StopButton_Click(object sender, EventArgs e)
         {
+            play = false;
+
             //reset the relevant params
             this.BeginInvoke((Action)delegate ()
             {
-                Thread.Sleep(TimeSpan.Zero); //this is to enable all timer tasks to complete
+                //Thread.Sleep(TimeSpan.Zero); //this is to enable all timer tasks to complete
                 Console.WriteLine("Transmission has stopped");
                 timeLabel.Visible = false;
                 timeUpdateText.Visible = false;
@@ -116,10 +180,29 @@ namespace CanLogger1
                 canData.Clear();
                 data.Message_Time = 0;
                 progressLabel.Text = "NO Transmission";
-                pause = false;
+                play = false;
                 stopwatch.Reset();
                 stopwatch.Stop();
             });
+        }
+
+        private void PauseButton_Click(object sender, EventArgs e) //pause and continue transmission 
+        {
+            switch (PauseButton.Text)
+            {
+                case "Pause":
+                    Console.WriteLine("Transmission has stopped");
+                    play = false;
+                    PauseButton.Text = "Continue";
+                    break;
+                case "Continue":
+                    Console.WriteLine("Transmission has started");
+                    readLogthread = new Thread(backgroundFuncToReadLog);
+                    play = true;
+                    readLogthread.Start();
+                    PauseButton.Text = "Pause";
+                    break;
+            }
         }
 
         //if the user presses enter after inputing start time
@@ -128,15 +211,17 @@ namespace CanLogger1
             if (e.KeyCode == Keys.Enter) StartButton_Click(sender, e);
         }
 
+        private void TimeText_MouseClick(object sender, MouseEventArgs e)
+        {
+            timeText.SelectAll();
+            timeText.Focus(); 
+        }
+
         bool control = false; //used to get when CAN data started in the log file
         private void ReadCANLogFile()
         {
             try
             {
-                streamLength = (long)(streamReader.BaseStream.Length / 50);
-
-                if (progressPercent <= 99) progressPercent = (int)((streamVar++ * 100) / streamLength);
-
                 if (!tracker) OnProgressChanged();
 
                 if (!string.IsNullOrEmpty(loggedMessage))
@@ -160,11 +245,7 @@ namespace CanLogger1
                         return;
                     }
 
-                    if (!listOfLoggedValues.Contains("Rx"))
-                    {
-                        status = false;
-                        return;
-                    }
+                    if (!listOfLoggedValues.Contains("Rx")) { status = false; return; }
 
                     //initialize the dataparams with values from the log file
                     if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time)) { status = false; return; }
@@ -188,27 +269,6 @@ namespace CanLogger1
             }
         }
 
-        private void updateProgressbar(object source, EventArgs e)
-        {
-            this.BeginInvoke((Action)delegate ()
-           {
-               if (tracker)
-               {
-                   progressLabel.Text = "Waiting for transmission to finish...";
-                   progressBar.Value = 100;
-                   progressBar.Update();
-               }
-               else if (progressBar.Maximum >= progressPercent)
-               {
-                   progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
-                   progressBar.Value = progressPercent;
-                   progressBar.Update();
-               }
-
-               if(canData.Count > 0) timeUpdateText.Text = (canData[0].Message_Time * 1000).ToString(); //send live update to UI to keep track of message time
-           });
-        }
-
         bool tracker = false; //tracks whenever we read from file to enable transmission
         private Stopwatch stopwatch = new Stopwatch(); //makes sure transmitted messages are timed
         private void readLogTransmitEnable()
@@ -221,9 +281,9 @@ namespace CanLogger1
                 return;
             }
 
-            var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
             float messageTime = 0;
             if (canData.Count > 0) messageTime = (float)canData[0].Message_Time * 1000;
+            else return;
 
             switch (Var.Name)
             {
@@ -286,62 +346,50 @@ namespace CanLogger1
                     }
                     break;
             }
-
-            ReadCANLogFile();
         }
 
-        private void PauseButton_Click(object sender, EventArgs e) //pause and continue transmission 
-        {
-            switch (PauseButton.Text)
-            {
-                case "Pause":
-                    Console.WriteLine("Transmission has stopped");
-                    pause = false;
-                    PauseButton.Text = "Continue";
-                    break;
-                case "Continue":
-                    Console.WriteLine("Transmission has started");
-                    thread = new Thread(backgroundFunction);
-                    pause = true;
-                    thread.Start();
-                    PauseButton.Text = "Pause";
-                    break;
-            }
-        }
+        private delegate void updateProgressBarEventHandler(object source, EventArgs e);
 
-        private void InterfaceComboBox_SelectedIndexChanged(object sender, EventArgs e) //which can interface is selected?
-        {
-            if (status)
-            {
-                DialogResult result = MessageBox.Show("You just changed the interface, Transmission will stop now" +
-                            " You will have to restart the application", "Message", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
-
-                if (result.Equals(DialogResult.OK))
-                {
-                    StopButton_Click(this, EventArgs.Empty);
-                    Environment.Exit(1);
-                }
-                else InterfaceComboBox.SelectedIndex = 0;
-            }
-
-            INTERFACE = InterfaceComboBox.SelectedIndex;
-        }
-
-        private void TimeText_MouseClick(object sender, MouseEventArgs e)
-        {
-            timeText.SelectAll();
-            timeText.Focus(); 
-        }
-
-        public delegate void updateProgressBarEventHandler(object source, EventArgs e);
-
-        public event updateProgressBarEventHandler ProgressChanged;
+        private event updateProgressBarEventHandler ProgressChanged;
         protected virtual void OnProgressChanged()
         {
-            if (ProgressChanged != null)
+            if (ProgressChanged != null) ProgressChanged(this, EventArgs.Empty);
+        }
+        private void backgroundFuncToReadLog()
+        {
+            while (play && !streamReader.EndOfStream)
             {
-                ProgressChanged(this, EventArgs.Empty);
+                ReadCANLogFile();
             }
+        }
+        private void backgroundFuncToTransmitLog()
+        {
+            while (play && timeLabel.Visible)
+            {
+                //CANTransmitter.Transmitter();
+                readLogTransmitEnable();
+            }
+        }
+        private void updateProgressbar(object source, EventArgs e)
+        {
+            //this.BeginInvoke((Action)delegate ()
+            //{
+            //    if (tracker)
+            //    {
+            //        progressLabel.Text = "Waiting for transmission to finish...";
+            //        progressBar.Value = 100;
+            //        progressBar.Update();
+            //    }
+            //    else if (progressBar.Maximum >= progressPercent)
+            //    {
+            //        progressPercent = (int)((streamVar++ * 100) / streamLength);
+            //        progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
+            //        progressBar.Value = progressPercent;
+            //        progressBar.Update();
+            //    }
+
+            //    if (canData.Count > 0) timeUpdateText.Text = (canData[0].Message_Time * 1000).ToString(); //send live update to UI to keep track of message time
+            //});
         }
     }
 }
