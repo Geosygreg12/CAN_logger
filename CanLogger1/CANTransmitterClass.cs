@@ -85,7 +85,7 @@ namespace CanLogger1
 
                     break;
 
-                case 1:
+                case 1: 
                     byte[] Msg = new byte[form1.GetData[0].Message_Length];
                     
                     for (int j = 0; j < form1.GetData[0].Message_Length; j++)
