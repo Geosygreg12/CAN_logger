@@ -157,8 +157,6 @@ namespace CanLogger1
 
         private void StopButton_Click(object sender, EventArgs e)
         {
-            play = false;
-
             //reset the relevant params
             this.BeginInvoke((Action)delegate ()
             {
