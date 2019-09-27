@@ -20,20 +20,9 @@ namespace CanLogger1
 
         public bool tracker = false;
         public Form1 form1 { get; set; }
-
-        public CANTransmitterClass() //public constructor
-        {
-            
-        } 
-        public void Transmitter()
-        {
-            tracker = true;
-        }
-
+        public CANTransmitterClass() { } //public constructor
         public void initialise()
         {
-            form1.transmitTimeReached += TransmitterTimer_Elapsed;
-
             switch (form1.GetInterface)
             {
                 case 0:
@@ -63,7 +52,7 @@ namespace CanLogger1
             }
         }
 
-        public void TransmitterTimer_Elapsed(object sender, EventArgs e)
+        public void Transmitter()
         {
             switch (form1.GetInterface)
             {

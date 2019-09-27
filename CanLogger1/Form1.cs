@@ -18,6 +18,7 @@ namespace CanLogger1
         public Form1()
         {
             CANTransmitter.form1 = this;
+            ProgressChanged += updateProgressbar;
             InitializeComponent();
         }
 
@@ -65,7 +66,7 @@ namespace CanLogger1
             {
                 case 0:
                 case 1:
-                    if(!timer1.Enabled && !PauseButton.Visible) CANTransmitter.initialise();
+                    if(!PauseButton.Visible) CANTransmitter.initialise();
                     break;
                 default:
                     MessageBox.Show("Kindly Select an Interface from the Options given", "Message");
@@ -74,8 +75,7 @@ namespace CanLogger1
 
             if (File.Exists(DirText.Text))
             {
-                if (!timer1.Enabled && !PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
-                //timer1.Enabled = true;
+                if (!PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
                 PauseButton.Visible = true;
@@ -87,39 +87,39 @@ namespace CanLogger1
             }
             else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            Thread T = new Thread(newFunction);
-            T.Start();
+            thread = new Thread(backgroundFunction);
+            pause = true;
+            thread.Start();
         }
 
-        private void newFunction()
-        {
-            while (timeLabel.Visible)
-            {
-                Timer1_Tick(this, EventArgs.Empty);
-            }
-        }
+        
         private void StopButton_Click(object sender, EventArgs e)
         {
             //reset the relevant params
-            Thread.Sleep(TimeSpan.Zero); //this is to enable all timer tasks to complete
-            Console.WriteLine("Transmission has stopped");
-            timer1.Enabled = false;
-            timeLabel.Visible = false;
-            timeUpdateText.Visible = false;
-            if(streamReader != null) streamReader.Close();
-            streamVar = 1;
-            previousTime = 0;
-            PauseButton.Visible = false;
-            progressBar.Visible = false;
-            progressLabel.Visible = false;
-            if (control || tracker) CANTransmitter.Close();
-            status = false;
-            control = false;
-            tracker = false;
-            listOfLoggedValues.Clear();
-            canData.Clear();
-            data.Message_Time = 0;
-            progressLabel.Text = "NO Transmission";
+            this.BeginInvoke((Action)delegate ()
+            {
+                Thread.Sleep(TimeSpan.Zero); //this is to enable all timer tasks to complete
+                Console.WriteLine("Transmission has stopped");
+                timeLabel.Visible = false;
+                timeUpdateText.Visible = false;
+                if(streamReader != null) streamReader.Close();
+                streamVar = 1;
+                previousTime = 0;
+                PauseButton.Visible = false;
+                progressBar.Visible = false;
+                progressLabel.Visible = false;
+                if (control || tracker) CANTransmitter.Close();
+                status = false;
+                control = false;
+                tracker = false;
+                listOfLoggedValues.Clear();
+                canData.Clear();
+                data.Message_Time = 0;
+                progressLabel.Text = "NO Transmission";
+                pause = false;
+                stopwatch.Reset();
+                stopwatch.Stop();
+            });
         }
 
         //if the user presses enter after inputing start time
@@ -137,16 +137,7 @@ namespace CanLogger1
 
                 if (progressPercent <= 99) progressPercent = (int)((streamVar++ * 100) / streamLength);
 
-                //if (!tracker)
-                //{
-                //    if (progressBar.Maximum >= progressPercent)
-                //    {
-                //        progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
-                //        progressBar.Value = progressPercent;
-                //        progressBar.Update();
-                //    }
-                //}
-                
+                if (!tracker) OnProgressChanged();
 
                 if (!string.IsNullOrEmpty(loggedMessage))
                     if (loggedMessage.EndsWith("measurement")) { status = true; control = true; }
@@ -161,13 +152,13 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
-                    //if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
-                    //{
-                    //    progressLabel.Text = "Waiting for transmission to finish...";
-                    //    tracker = true;
-                    //    status = false;
-                    //    return;
-                    //}
+                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
+                    {
+                        OnProgressChanged();
+                        tracker = true;
+                        status = false;
+                        return;
+                    }
 
                     if (!listOfLoggedValues.Contains("Rx"))
                     {
@@ -197,9 +188,30 @@ namespace CanLogger1
             }
         }
 
+        private void updateProgressbar(object source, EventArgs e)
+        {
+            this.BeginInvoke((Action)delegate ()
+           {
+               if (tracker)
+               {
+                   progressLabel.Text = "Waiting for transmission to finish...";
+                   progressBar.Value = 100;
+                   progressBar.Update();
+               }
+               else if (progressBar.Maximum >= progressPercent)
+               {
+                   progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
+                   progressBar.Value = progressPercent;
+                   progressBar.Update();
+               }
+
+               if(canData.Count > 0) timeUpdateText.Text = (canData[0].Message_Time * 1000).ToString(); //send live update to UI to keep track of message time
+           });
+        }
+
         bool tracker = false; //tracks whenever we read from file to enable transmission
         private Stopwatch stopwatch = new Stopwatch(); //makes sure transmitted messages are timed
-        private void Timer1_Tick(object sender, EventArgs e)
+        private void readLogTransmitEnable()
         {
             //get which radio button is checked
             if (canData.Count == 0 && control && tracker && !status)
@@ -212,7 +224,6 @@ namespace CanLogger1
             var Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
             float messageTime = 0;
             if (canData.Count > 0) messageTime = (float)canData[0].Message_Time * 1000;
-            long previousMessageTime = 0;
 
             switch (Var.Name)
             {
@@ -225,7 +236,7 @@ namespace CanLogger1
                             if (control && (canData.Count > 0)) //if the parameters/data are parsed successfully, then status is true
                             {
                                 Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
-                                CANTransmitter.TransmitterTimer_Elapsed(this, EventArgs.Empty);
+                                CANTransmitter.Transmitter();
                             }
                         }
                         else
@@ -259,14 +270,14 @@ namespace CanLogger1
                             if ((messageTime <= previousTime) && (canData.Count > 0))
                             {
                                 Console.WriteLine("The time index is: " + canData[0].Message_Time);
-                                CANTransmitter.TransmitterTimer_Elapsed(this, EventArgs.Empty);
-                                //OnTransmitTimeReached();
+                                OnProgressChanged();
+                                CANTransmitter.Transmitter();
                             }
                             else if (stopwatch.IsRunning)
                             {
                                 if (stopwatch.ElapsedMilliseconds >= ((long)messageTime - previousTime))
                                 {
-                                    previousTime = (long)messageTime + timer1.Interval; //update previous time 
+                                    previousTime = (long)messageTime + 1; //update previous time 
                                     stopwatch.Restart();
                                 }
                             }
@@ -276,8 +287,6 @@ namespace CanLogger1
                     break;
             }
 
-            //timeUpdateText.Text = messageTime.ToString(); //send live update to UI to keep track of message time
-            
             ReadCANLogFile();
         }
 
@@ -287,12 +296,14 @@ namespace CanLogger1
             {
                 case "Pause":
                     Console.WriteLine("Transmission has stopped");
-                    timer1.Enabled = false;
+                    pause = false;
                     PauseButton.Text = "Continue";
                     break;
                 case "Continue":
                     Console.WriteLine("Transmission has started");
-                    timer1.Enabled = true;
+                    thread = new Thread(backgroundFunction);
+                    pause = true;
+                    thread.Start();
                     PauseButton.Text = "Pause";
                     break;
             }
@@ -322,15 +333,14 @@ namespace CanLogger1
             timeText.Focus(); 
         }
 
-        public delegate void transmitTimeEventHandler(object source, EventArgs e);
+        public delegate void updateProgressBarEventHandler(object source, EventArgs e);
 
-        public event transmitTimeEventHandler transmitTimeReached;
-
-        protected virtual void OnTransmitTimeReached()
+        public event updateProgressBarEventHandler ProgressChanged;
+        protected virtual void OnProgressChanged()
         {
-            if (transmitTimeReached != null)
+            if (ProgressChanged != null)
             {
-                transmitTimeReached(this, EventArgs.Empty);
+                ProgressChanged(this, EventArgs.Empty);
             }
         }
     }

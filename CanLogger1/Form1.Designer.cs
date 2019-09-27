@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.DirText = new System.Windows.Forms.TextBox();
             this.BrowseButton = new System.Windows.Forms.Button();
             this.singleRadio = new System.Windows.Forms.RadioButton();
@@ -39,7 +38,6 @@
             this.timeText = new System.Windows.Forms.TextBox();
             this.progressLabel = new System.Windows.Forms.Label();
             this.progressBar = new System.Windows.Forms.ProgressBar();
-            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.PauseButton = new System.Windows.Forms.Button();
             this.timeLabel = new System.Windows.Forms.Label();
             this.timeUpdateText = new System.Windows.Forms.TextBox();
@@ -151,11 +149,6 @@
             this.progressBar.TabIndex = 13;
             this.progressBar.Visible = false;
             // 
-            // timer1
-            // 
-            this.timer1.Interval = 1;
-            this.timer1.Tick += new System.EventHandler(this.Timer1_Tick);
-            // 
             // PauseButton
             // 
             this.PauseButton.Location = new System.Drawing.Point(315, 229);
@@ -260,7 +253,6 @@
         private System.Int32 progressPercent;
         private System.Int64 previousTime = 0;
         private System.Boolean status = false;
-        private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.Button PauseButton;
         private System.IO.StreamReader streamReader;
         private string loggedMessage = string.Empty;
@@ -270,6 +262,8 @@
         private System.Windows.Forms.Label interfaceLabel;
         private System.Int32 INTERFACE = 0;
         private System.Collections.Generic.List<DataParameters> canData = new System.Collections.Generic.List<DataParameters>();
+        private System.Threading.Thread thread;
+        private System.Boolean pause = false;
 
         public struct DataParameters
         {
@@ -277,6 +271,13 @@
             public float Message_Time;
             public System.String[] CAN_Message;
             public string Message_ID;
+        }
+        private void backgroundFunction()
+        {
+            while (timeLabel.Visible && pause)
+            {
+                readLogTransmitEnable();
+            }
         }
 
         public System.Collections.Generic.List<DataParameters> GetData { get => this.canData; }
