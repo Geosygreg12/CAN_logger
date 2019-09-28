@@ -248,7 +248,7 @@ namespace CanLogger1
                     //initialize the dataparams with values from the log file
                     if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time)) { status = false; return; }
 
-                    if (!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) { status = false; return; } 
+                    if ((!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) || ( data.Message_Length == 0)) { status = false; return; } 
 
                     data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
                     data.CAN_Message = new string[data.Message_Length];
@@ -256,7 +256,7 @@ namespace CanLogger1
                     for (int i = MESSAGE_INDEX, j = 0; i < (MESSAGE_INDEX + data.Message_Length); i++, j++)
                         data.CAN_Message[j] = listOfLoggedValues[i];
 
-                    if(status) canData.Add(data);
+                    if(status && (data.CAN_Message.Length > 0)) canData.Add(data);
                 }
                 else loggedMessage = streamReader.ReadLine();
             }
@@ -327,7 +327,7 @@ namespace CanLogger1
                         default:
                             if ((messageTime <= previousTime) && (canData.Count > 0))
                             {
-                                Console.WriteLine("The time index is: " + canData[0].Message_Time);
+                                Console.WriteLine("The time index is: " + canData[CANTransmitterClass.num].Message_Time);
                                 OnProgressChanged();
                                 CANTransmitter.Transmitter();
                             }
@@ -335,7 +335,7 @@ namespace CanLogger1
                             {
                                 if (stopwatch.ElapsedMilliseconds >= ((long)messageTime - previousTime))
                                 {
-                                    previousTime = (long)messageTime + 1; //update previous time 
+                                    previousTime = (long)messageTime + 1000; //update previous time 
                                     stopwatch.Restart();
                                 }
                             }
