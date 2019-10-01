@@ -302,7 +302,7 @@ namespace CanLogger1
                                 MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                 return;
                             }
-                            else { if(canData.Count > 0) canData.RemoveAt(0); }
+                            else { CANTransmitterClass.num++; }
                         }
                     }
                     else
