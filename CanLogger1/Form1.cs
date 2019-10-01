@@ -276,20 +276,20 @@ namespace CanLogger1
                         if (startTime == Math.Floor(messageTime / 1000) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
                         {
                             //transmit current message
-                            if (control && (canData.Count > 0)) //if the parameters/data are parsed successfully, then status is true
+                            if (control && (canData.Count > CANTransmitterClass.num)) //if the parameters/data are parsed successfully, then status is true
                             {
                                 CANTransmitter.Transmitter();
                             }
                         }
                         else
                         {
-                            if (startTime < messageTime) //else is start time still ahead? no, finish
+                            if (startTime < messageTime) //else is start time passed? no, finish
                             {
                                 StopButton_Click(this, EventArgs.Empty);
                                 MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                 return;
                             }
-                            else { CANTransmitterClass.num++; }
+                            else CANTransmitterClass.num++; 
                         }
                     }
                     else
@@ -309,28 +309,18 @@ namespace CanLogger1
 
                         case false:
                         default:
-                            if ((stopwatch.ElapsedMilliseconds >= messageTime) && (canData.Count > CANTransmitterClass.num))
+
+                            if (stopwatch.IsRunning)
                             {
-                                //(messageTime < previousTime)
-                                //Console.WriteLine("The time index is: " + canData[CANTransmitterClass.num].Message_Time);
-                                //OnProgressChanged();
-                                CANTransmitter.Transmitter();
-                            }
-                            else if (stopwatch.IsRunning)
-                            {
-                                if (stopwatch.ElapsedMilliseconds >= (messageTime - previousTime))
+                                if ((stopwatch.ElapsedMilliseconds >= messageTime) && (canData.Count > CANTransmitterClass.num))
                                 {
-                                    ////(stopwatch.ElapsedMilliseconds - (previousTime / countt)) >= (messageTime - prvTime)
-                                    //previousTime += 1000; //update previous time 
-                                    //stopwatch.Restart();
+                                    CANTransmitter.Transmitter();
                                 }
                             }
                             else stopwatch.Start();
 
                             break;
                     }
-
-                    
                     break;
             }
         }

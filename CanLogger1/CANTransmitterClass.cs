@@ -53,15 +53,11 @@ namespace CanLogger1
             }
         }
         public static int num = 0;
-        CancellationTokenSource cts = new CancellationTokenSource();
         public void Transmitter()
         {
-            CancellationToken ct = cts.Token;
-
             switch (form1.GetInterface)
             {
                 case 0:
-
                     Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
 
                     Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData[num].Message_ID, 16), form1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
@@ -80,7 +76,6 @@ namespace CanLogger1
                     break;
 
                 case 1: 
-
                     pCANMsg.DATA = form1.GetData[num].CAN_Message;
                     pCANMsg.ID = Convert.ToUInt32(form1.GetData[num].Message_ID, 16);
                     pCANMsg.LEN = Convert.ToByte(form1.GetData[num].Message_Length);
@@ -98,7 +93,6 @@ namespace CanLogger1
 
                     break;
             }
-
         }
 
         public void Close()
