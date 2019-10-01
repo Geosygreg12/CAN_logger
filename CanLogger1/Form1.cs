@@ -72,11 +72,42 @@ namespace CanLogger1
             if (e.KeyCode == Keys.Enter) timeText.Focus();
         }
 
-        private void DirText_TextChanged(object sender, EventArgs e)
+        bool cancel = false; string str = string.Empty;
+        private async void DirText_TextChanged(object sender, EventArgs e)
         {
             // if text change is true, delete previous list of can messages so new ones can be populated
-            if (listOfLoggedValues.Count > 1) StopButton_Click(sender, e);
+            if (play) StopButton_Click(sender, e);
             listOfLoggedValues.Clear();
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            CancellationToken ct = cts.Token;
+            var tasks = new ConcurrentBag<Task>();
+            
+
+            Task t = Task.Run(() => 
+            {
+                if (!str.Equals(DirText.Text))
+                {
+                    if (!string.IsNullOrEmpty(str)) streamReader.Close();
+
+                    str = DirText.Text;
+                    canData.Clear();
+                    streamReader = new StreamReader(str, Encoding.ASCII);
+                }
+                
+                while (!streamReader.EndOfStream) ReadCANLogFile();
+
+                if (streamReader != null && streamReader.EndOfStream) streamReader.Close();
+
+            }, ct);
+            tasks.Add(t);
+
+            try
+            {
+                await Task.WhenAll(tasks.ToArray());
+            }
+            catch (Exception exc) { Console.WriteLine(exc.Message); }
+            
         }
 
         private void StartButton_Click(object sender, EventArgs e)
@@ -95,8 +126,8 @@ namespace CanLogger1
 
             if (File.Exists(DirText.Text))
             {
-                if (!PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
-                streamLength = (long)(streamReader.BaseStream.Length / 50);
+                //if (!PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
+                //streamLength = (long)(streamReader.BaseStream.Length / 50);
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
                 PauseButton.Visible = true;
@@ -107,13 +138,14 @@ namespace CanLogger1
                 progressPercent = 0;
             }
             else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
+            if (cancel) cancel = false;
             play = true;
             Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
 
-            readLogthread = new Thread(backgroundFuncToReadLog);
+            //readLogthread = new Thread(backgroundFuncToReadLog);
             transmitLogthread = new Thread(backgroundFuncToTransmitLog);
-            readLogthread.Start(); transmitLogthread.Start();
+            //readLogthread.Start(); 
+            transmitLogthread.Start();
         }
         private async void stpBtn(object source, EventArgs e)
         {
@@ -164,7 +196,7 @@ namespace CanLogger1
                 Console.WriteLine("Transmission has stopped");
                 timeLabel.Visible = false;
                 timeUpdateText.Visible = false;
-                if(streamReader != null) streamReader.Close();
+                //if(streamReader != null) streamReader.Close();
                 streamVar = 1;
                 previousTime = 0;
                 PauseButton.Visible = false;
@@ -175,12 +207,12 @@ namespace CanLogger1
                 control = false;
                 tracker = false;
                 listOfLoggedValues.Clear();
-                canData.Clear();
+                //canData.Clear();
                 data.Message_Time = 0;
                 progressLabel.Text = "NO Transmission";
                 play = false;
                 stopwatch.Reset();
-                stopwatch.Stop();
+                CANTransmitterClass.num = 0;
             });
         }
 
@@ -272,7 +304,7 @@ namespace CanLogger1
         private void readLogTransmitEnable()
         {
             //get which radio button is checked
-            if (canData.Count == 0 && control && tracker && !status)
+            if (canData.Count == CANTransmitterClass.num && control && tracker && !status)
             {
                 StopButton_Click(this, EventArgs.Empty);
                 MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -280,7 +312,7 @@ namespace CanLogger1
             }
 
             float messageTime = 0;
-            if (canData.Count > 0) messageTime = (float)canData[0].Message_Time * 1000;
+            if (canData.Count > CANTransmitterClass.num) messageTime = (float)canData[CANTransmitterClass.num].Message_Time * 1000;
             else return;
 
             switch (Var.Name)
@@ -323,25 +355,30 @@ namespace CanLogger1
                             if (startTime <= messageTime) goto default;
                             break;
 
-                        case false:                      
+                        case false:
                         default:
-                            if ((messageTime <= previousTime) && (canData.Count > 0))
+                            if ((stopwatch.ElapsedMilliseconds >= messageTime) && (canData.Count > CANTransmitterClass.num))
                             {
+                                //(messageTime < previousTime)
                                 Console.WriteLine("The time index is: " + canData[CANTransmitterClass.num].Message_Time);
-                                OnProgressChanged();
+                                //OnProgressChanged();
                                 CANTransmitter.Transmitter();
                             }
                             else if (stopwatch.IsRunning)
                             {
-                                if (stopwatch.ElapsedMilliseconds >= ((long)messageTime - previousTime))
+                                if (stopwatch.ElapsedMilliseconds >= (messageTime - previousTime))
                                 {
-                                    previousTime = (long)messageTime + 1000; //update previous time 
-                                    stopwatch.Restart();
+                                    ////(stopwatch.ElapsedMilliseconds - (previousTime / countt)) >= (messageTime - prvTime)
+                                    //previousTime += 1000; //update previous time 
+                                    //stopwatch.Restart();
                                 }
                             }
                             else stopwatch.Start();
+
                             break;
                     }
+
+                    
                     break;
             }
         }
@@ -355,16 +392,16 @@ namespace CanLogger1
         }
         private void backgroundFuncToReadLog()
         {
-            while (play && !streamReader.EndOfStream)
-            {
-                ReadCANLogFile();
-            }
+            //while (play)
+            //{
+            //    if(!streamReader.EndOfStream) ReadCANLogFile();
+            //    //readLogTransmitEnable();
+            //}
         }
         private void backgroundFuncToTransmitLog()
         {
-            while (play && timeLabel.Visible)
+            while (play)
             {
-                //CANTransmitter.Transmitter();
                 readLogTransmitEnable();
             }
         }
@@ -378,7 +415,7 @@ namespace CanLogger1
             //        progressBar.Value = 100;
             //        progressBar.Update();
             //    }
-            //    else if (progressBar.Maximum >= progressPercent)
+            //    else if (progressBar.Maximum > progressPercent)
             //    {
             //        progressPercent = (int)((streamVar++ * 100) / streamLength);
             //        progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);

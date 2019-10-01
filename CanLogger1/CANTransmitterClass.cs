@@ -83,11 +83,6 @@ namespace CanLogger1
                         return;
                     }
 
-
-                    //if (form1.GetData.Count > num)
-                    //{
-                    //    form1.GetData.RemoveAt(0);
-                    //}
                     num++;
                     break;
 
