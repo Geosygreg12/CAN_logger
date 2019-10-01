@@ -27,7 +27,7 @@ namespace CanLogger1
 
         private void InterfaceComboBox_SelectedIndexChanged(object sender, EventArgs e) //which can interface is selected?
         {
-            if (status)
+            if (control)
             {
                 DialogResult result = MessageBox.Show("You just changed the interface, Transmission will stop now" +
                             " You will have to restart the application", "Message", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
@@ -87,7 +87,12 @@ namespace CanLogger1
 
                     str = DirText.Text;
                     canData.Clear();
-                    streamReader = new StreamReader(str, Encoding.ASCII);
+                    if (File.Exists(str)) streamReader = new StreamReader(str, Encoding.ASCII);
+                    else
+                    {
+                        MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
                 }
                 
                 while (!streamReader.EndOfStream) ReadCANLogFile();
@@ -104,7 +109,7 @@ namespace CanLogger1
             {
                 case 0:
                 case 1:
-                    if(!PauseButton.Visible) CANTransmitter.initialise();
+                    if(!play) CANTransmitter.initialise();
                     break;
                 default:
                     MessageBox.Show("Kindly Select an Interface from the Options given", "Message");
@@ -123,10 +128,9 @@ namespace CanLogger1
                 progressLabel.Visible = true;
                 progressPercent = 0;
             }
-            else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            play = true;
-            Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
 
+            Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
+            play = true;
             transmitLogthread = new Thread(backgroundFuncToTransmitLog);
             transmitLogthread.Start();
         }
