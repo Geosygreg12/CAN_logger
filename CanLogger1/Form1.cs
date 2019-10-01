@@ -27,7 +27,7 @@ namespace CanLogger1
 
         private void InterfaceComboBox_SelectedIndexChanged(object sender, EventArgs e) //which can interface is selected?
         {
-            if (control)
+            if (play)
             {
                 DialogResult result = MessageBox.Show("You just changed the interface, Transmission will stop now" +
                             " You will have to restart the application", "Message", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
@@ -337,7 +337,11 @@ namespace CanLogger1
         {
             while (play)
             {
-                readLogTransmitEnable();
+                if (canData.Count > CANTransmitterClass.num)
+                {
+                    //CANTransmitter.Transmitter();
+                    readLogTransmitEnable();
+                }
             }
         }
         private void updateProgressbar(object source, EventArgs e)
