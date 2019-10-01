@@ -138,6 +138,9 @@ namespace CanLogger1
         private void StopButton_Click(object sender, EventArgs e)
         {
             //reset the relevant params
+
+            Console.WriteLine("Stopped at: " + canData[CANTransmitterClass.num].Message_Time);
+
             this.BeginInvoke((Action)delegate ()
             {
                 //Thread.Sleep(TimeSpan.Zero); //this is to enable all timer tasks to complete
@@ -339,8 +342,8 @@ namespace CanLogger1
             {
                 if (canData.Count > CANTransmitterClass.num)
                 {
-                    //CANTransmitter.Transmitter();
-                    readLogTransmitEnable();
+                    CANTransmitter.Transmitter();
+                    //readLogTransmitEnable();
                 }
             }
         }
