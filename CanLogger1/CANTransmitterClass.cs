@@ -20,7 +20,6 @@ namespace CanLogger1
         TPCANMsg pCANMsg;
         TPCANStatus pCANStatus;
 
-        public bool tracker = false;
         public Form1 form1 { get; set; }
         public CANTransmitterClass() { } //public constructor
         public void initialise()
@@ -54,7 +53,6 @@ namespace CanLogger1
             }
         }
         public static int num = 0;
-        public static bool cancel = false;
         CancellationTokenSource cts = new CancellationTokenSource();
         public void Transmitter()
         {
@@ -68,13 +66,12 @@ namespace CanLogger1
 
                     Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData[num].Message_ID, 16), form1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
                     writeStatus = Canlib.canWriteSync(canHandle, 500);
-                    tracker = true;
 
                     if (writeStatus < 0)
                     {
                         //tracker = false;
                         Console.WriteLine("Writing file failed,  can status: " + writeStatus +
-                                           "\nThe message is: " + form1.GetData[num].CAN_Message.ToString() +
+                                           "\nThe message time is: " + form1.GetData[num].Message_Time.ToString() +
                                            "\nThe message ID is: " + form1.GetData[num].Message_ID);
                         return;
                     }
@@ -89,13 +86,12 @@ namespace CanLogger1
                     pCANMsg.LEN = Convert.ToByte(form1.GetData[num].Message_Length);
 
                     pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
-                    tracker = true;
 
                     if (pCANStatus < 0)
                     {
                         //tracker = false;
                         Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
-                                           "\nThe message is: " + form1.GetData[num].CAN_Message.ToString() +
+                                           "\nThe message time is: " + form1.GetData[num].Message_Time.ToString() +
                                            "\nThe message ID is: " + form1.GetData[num].Message_ID);
                         return;
                     }
@@ -121,8 +117,6 @@ namespace CanLogger1
                     PCANBasic.Uninitialize(peakHandle);
                     break;
             }
-
-            tracker = false;
         }
 
         private void errorControl(int handle = 1, Canlib.canStatus status = Canlib.canStatus.canOK, string location = "\0")

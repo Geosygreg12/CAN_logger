@@ -79,12 +79,7 @@ namespace CanLogger1
             if (play) StopButton_Click(sender, e);
             listOfLoggedValues.Clear();
 
-            CancellationTokenSource cts = new CancellationTokenSource();
-            CancellationToken ct = cts.Token;
-            var tasks = new ConcurrentBag<Task>();
-            
-
-            Task t = Task.Run(() => 
+            await Task.Run(() => 
             {
                 if (!str.Equals(DirText.Text))
                 {
@@ -99,15 +94,7 @@ namespace CanLogger1
 
                 if (streamReader != null && streamReader.EndOfStream) streamReader.Close();
 
-            }, ct);
-            tasks.Add(t);
-
-            try
-            {
-                await Task.WhenAll(tasks.ToArray());
-            }
-            catch (Exception exc) { Console.WriteLine(exc.Message); }
-            
+            });
         }
 
         private void StartButton_Click(object sender, EventArgs e)
@@ -126,7 +113,6 @@ namespace CanLogger1
 
             if (File.Exists(DirText.Text))
             {
-                //if (!PauseButton.Visible) streamReader = new StreamReader(DirText.Text, Encoding.ASCII);
                 //streamLength = (long)(streamReader.BaseStream.Length / 50);
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
@@ -141,9 +127,7 @@ namespace CanLogger1
             play = true;
             Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
 
-            //readLogthread = new Thread(backgroundFuncToReadLog);
             transmitLogthread = new Thread(backgroundFuncToTransmitLog);
-            //readLogthread.Start(); 
             transmitLogthread.Start();
         }
 
@@ -156,7 +140,6 @@ namespace CanLogger1
                 Console.WriteLine("Transmission has stopped");
                 timeLabel.Visible = false;
                 timeUpdateText.Visible = false;
-                //if(streamReader != null) streamReader.Close();
                 streamVar = 1;
                 previousTime = 0;
                 PauseButton.Visible = false;
@@ -167,7 +150,6 @@ namespace CanLogger1
                 control = false;
                 tracker = false;
                 listOfLoggedValues.Clear();
-                //canData.Clear();
                 data.Message_Time = 0;
                 progressLabel.Text = "NO Transmission";
                 play = false;
@@ -181,15 +163,11 @@ namespace CanLogger1
             switch (PauseButton.Text)
             {
                 case "Pause":
-                    Console.WriteLine("Transmission has stopped");
                     play = false;
                     PauseButton.Text = "Continue";
                     break;
                 case "Continue":
-                    Console.WriteLine("Transmission has started");
-                    readLogthread = new Thread(backgroundFuncToReadLog);
                     play = true;
-                    readLogthread.Start();
                     PauseButton.Text = "Pause";
                     break;
             }
@@ -248,10 +226,16 @@ namespace CanLogger1
                     for (int i = MESSAGE_INDEX, j = 0; i < (MESSAGE_INDEX + data.Message_Length); i++, j++)
                     {
                         byte Byte = 0;
-                        try { Byte = Convert.ToByte(listOfLoggedValues[i], 16); }
-                        catch (Exception exc) { Console.WriteLine("Error :" + exc.Message); }
+
+                        try
+                        {
+                            Byte = Convert.ToByte(listOfLoggedValues[i], 16);
+                        }
+                        catch (Exception exc)
+                        { Console.WriteLine("Error :" + exc.Message); }
+
                         data.CAN_Message[j] = Byte;
-                    }    //data.CAN_Message[j] = listOfLoggedValues[i];
+                    }    
 
                     if(status && (data.CAN_Message.Length > 0)) canData.Add(data);
                 }
@@ -290,7 +274,6 @@ namespace CanLogger1
                             //transmit current message
                             if (control && (canData.Count > 0)) //if the parameters/data are parsed successfully, then status is true
                             {
-                                Console.WriteLine("The time index is: " + listOfLoggedValues[TIME_INDEX]);
                                 CANTransmitter.Transmitter();
                             }
                         }
@@ -355,14 +338,7 @@ namespace CanLogger1
         {
             if (ProgressChanged != null) ProgressChanged(this, EventArgs.Empty);
         }
-        private void backgroundFuncToReadLog()
-        {
-            //while (play)
-            //{
-            //    if(!streamReader.EndOfStream) ReadCANLogFile();
-            //    //readLogTransmitEnable();
-            //}
-        }
+        
         private void backgroundFuncToTransmitLog()
         {
             while (play)
