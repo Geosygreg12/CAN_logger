@@ -243,10 +243,15 @@ namespace CanLogger1
                     if ((!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) || ( data.Message_Length == 0)) { status = false; return; } 
 
                     data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
-                    data.CAN_Message = new string[data.Message_Length];
+                    data.CAN_Message = new Byte[data.Message_Length];
 
                     for (int i = MESSAGE_INDEX, j = 0; i < (MESSAGE_INDEX + data.Message_Length); i++, j++)
-                        data.CAN_Message[j] = listOfLoggedValues[i];
+                    {
+                        byte Byte = 0;
+                        try { Byte = Convert.ToByte(listOfLoggedValues[i], 16); }
+                        catch (Exception exc) { Console.WriteLine("Error :" + exc.Message); }
+                        data.CAN_Message[j] = Byte;
+                    }    //data.CAN_Message[j] = listOfLoggedValues[i];
 
                     if(status && (data.CAN_Message.Length > 0)) canData.Add(data);
                 }

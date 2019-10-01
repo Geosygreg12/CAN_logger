@@ -272,7 +272,7 @@
         {
             public int Message_Length;
             public float Message_Time;
-            public System.String[] CAN_Message;
+            public System.Byte[] CAN_Message;
             public string Message_ID;
         }
         
