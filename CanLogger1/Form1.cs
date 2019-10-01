@@ -72,7 +72,7 @@ namespace CanLogger1
             if (e.KeyCode == Keys.Enter) timeText.Focus();
         }
 
-        bool cancel = false; string str = string.Empty;
+        string str = string.Empty;
         private async void DirText_TextChanged(object sender, EventArgs e)
         {
             // if text change is true, delete previous list of can messages so new ones can be populated
@@ -138,7 +138,6 @@ namespace CanLogger1
                 progressPercent = 0;
             }
             else MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            if (cancel) cancel = false;
             play = true;
             Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
 
@@ -146,45 +145,6 @@ namespace CanLogger1
             transmitLogthread = new Thread(backgroundFuncToTransmitLog);
             //readLogthread.Start(); 
             transmitLogthread.Start();
-        }
-        private async void stpBtn(object source, EventArgs e)
-        {
-            CancellationTokenSource tokenSource = new CancellationTokenSource();
-
-            CancellationToken token = tokenSource.Token;
-
-            Task t;
-            var tasks = new ConcurrentBag<Task>();
-
-            t = Task.Run(() =>
-            {
-                //Task tc1 = Task.Run(() => backgroundFuncToReadLog(token), token);
-                //Task tc2 = Task.Run(() => backgroundFuncToTransmitLog(token), token);
-
-                //tasks.Add(tc1);
-                //tasks.Add(tc2);
-            }, token);
-
-            tasks.Add(t);
-
-            if (!play)
-            {
-                tokenSource.Cancel();
-                Console.WriteLine("\nTask cancellation requested.");
-            }
-
-            try
-            {
-                await Task.WhenAll(tasks.ToArray());
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine($"\n{nameof(OperationCanceledException)} thrown\n");
-            }
-            finally
-            {
-                tokenSource.Dispose();
-            }
         }
 
         private void StopButton_Click(object sender, EventArgs e)
