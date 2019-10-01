@@ -325,7 +325,7 @@ namespace CanLogger1
                             if ((stopwatch.ElapsedMilliseconds >= messageTime) && (canData.Count > CANTransmitterClass.num))
                             {
                                 //(messageTime < previousTime)
-                                Console.WriteLine("The time index is: " + canData[CANTransmitterClass.num].Message_Time);
+                                //Console.WriteLine("The time index is: " + canData[CANTransmitterClass.num].Message_Time);
                                 //OnProgressChanged();
                                 CANTransmitter.Transmitter();
                             }
