@@ -269,7 +269,6 @@
         private System.Boolean play = false;
         System.Windows.Forms.RadioButton Var;
         private System.Windows.Forms.Timer progressBarTimer;
-        private System.Int64 streamLength = 0;
 
         public struct DataParameters
         {
