@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.DirText = new System.Windows.Forms.TextBox();
             this.BrowseButton = new System.Windows.Forms.Button();
             this.singleRadio = new System.Windows.Forms.RadioButton();
@@ -43,6 +44,7 @@
             this.timeUpdateText = new System.Windows.Forms.TextBox();
             this.InterfaceComboBox = new System.Windows.Forms.ComboBox();
             this.interfaceLabel = new System.Windows.Forms.Label();
+            this.progressBarTimer = new System.Windows.Forms.Timer(this.components);
             this.radioPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -200,6 +202,11 @@
             this.interfaceLabel.TabIndex = 18;
             this.interfaceLabel.Text = "Select Interface";
             // 
+            // progressBarTimer
+            // 
+            this.progressBarTimer.Interval = 1000;
+            this.progressBarTimer.Tick += new System.EventHandler(this.ProgressBarTimer_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -226,6 +233,7 @@
             this.radioPanel.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
 
         #endregion
@@ -260,6 +268,8 @@
         private System.Threading.Thread transmitLogthread;
         private System.Boolean play = false;
         System.Windows.Forms.RadioButton Var;
+        private System.Windows.Forms.Timer progressBarTimer;
+        private System.Int64 streamLength = 0;
 
         public struct DataParameters
         {

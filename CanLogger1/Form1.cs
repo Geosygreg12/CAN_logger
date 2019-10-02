@@ -123,36 +123,38 @@ namespace CanLogger1
                 Console.WriteLine("Transmission has started");
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
+                progressBarTimer.Enabled = true;
             }
 
             Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
             play = true;
             transmitLogthread = new Thread(backgroundFuncToTransmitLog);
             transmitLogthread.Start();
+            stopwatch.Start();
         }
 
         private void StopButton_Click(object sender, EventArgs e)
         {
             //reset the relevant params 
-            Console.WriteLine("Stopped at: " + canData[CANTransmitterClass.num - 1].Message_Time);
-
             this.BeginInvoke((Action)delegate ()
             {
-                  Console.WriteLine("Transmission has stopped");
-                  timeLabel.Visible = false;
-                  timeUpdateText.Visible = false;
-                  PauseButton.Visible = false;
-                  progressBar.Visible = false;
-                  progressLabel.Visible = false;
-                  if (play) CANTransmitter.Close();
-                  status = false;
-                  control = false;
-                  listOfLoggedValues.Clear();
-                  data.Message_Time = 0;
-                  progressLabel.Text = "NO Transmission";
-                  play = false;
-                  stopwatch.Reset();
-                  CANTransmitterClass.num = 0;
+                Console.WriteLine("Transmission has stopped");
+                timeLabel.Visible = false;
+                timeUpdateText.Visible = false;
+                PauseButton.Visible = false;
+                progressBar.Visible = false;
+                progressLabel.Visible = false;
+                if (play) CANTransmitter.Close();
+                status = false;
+                control = false;
+                listOfLoggedValues.Clear();
+                data.Message_Time = 0;
+                progressLabel.Text = "NO Transmission";
+                timeUpdateText.Text = string.Empty;
+                play = false;
+                stopwatch.Reset();
+                progressBarTimer.Enabled = false;
+                CANTransmitterClass.num = 0;
             });
         }
 
@@ -163,9 +165,13 @@ namespace CanLogger1
                 case "Pause":
                     play = false;
                     PauseButton.Text = "Continue";
+                    stopwatch.Stop();
                     break;
                 case "Continue":
                     play = true;
+                    transmitLogthread = new Thread(backgroundFuncToTransmitLog);
+                    transmitLogthread.Start();
+                    stopwatch.Start();
                     PauseButton.Text = "Pause";
                     break;
             }
@@ -312,7 +318,6 @@ namespace CanLogger1
                             CANTransmitter.Transmitter();
                         }
                     }
-                    else stopwatch.Start();
 
                     break;
             }
@@ -321,6 +326,20 @@ namespace CanLogger1
         private void backgroundFuncToTransmitLog()
         {
             while (play) readLogTransmitEnable();
+        }
+
+        private void ProgressBarTimer_Tick(object sender, EventArgs e)
+        {
+            this.BeginInvoke((Action) delegate()
+            {
+                if (CANTransmitterClass.num <= canData.Count)
+                {
+                    progressBar.Value = (CANTransmitterClass.num * 100)/canData.Count;
+                    progressLabel.Text = string.Format("Processing ... {0}%", progressBar.Value);
+                    progressBar.Update();
+                    timeUpdateText.Text = canData[CANTransmitterClass.num].Message_Time.ToString();
+                }
+            });
         }
     }
 }
