@@ -200,10 +200,9 @@ namespace CanLogger1
                 if (!tracker) OnProgressChanged();
 
                 if (!string.IsNullOrEmpty(loggedMessage))
-                    if (loggedMessage.EndsWith("measurement")) { status = true; control = true; }
-                    else if (control) status = true;
+                    if (loggedMessage.EndsWith("measurement")) control = true; 
 
-                if (status) //status is a bool that is used to indicate where CAN data starts in the log file
+                if (control) //control is a bool that is used to indicate where CAN data starts in the log file
                 {
                     loggedMessage = streamReader.ReadLine();
 
@@ -279,10 +278,7 @@ namespace CanLogger1
                         if (startTime == Math.Floor(messageTime / 1000) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
                         {
                             //transmit current message
-                            if (control && (canData.Count > CANTransmitterClass.num)) //if the parameters/data are parsed successfully, then status is true
-                            {
-                                CANTransmitter.Transmitter();
-                            }
+                            if (control && (canData.Count > CANTransmitterClass.num))  CANTransmitter.Transmitter(); 
                         }
                         else
                         {

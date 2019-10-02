@@ -67,12 +67,11 @@ namespace CanLogger1
                     {
                         //tracker = false;
                         Console.WriteLine("Writing file failed,  can status: " + writeStatus +
-                                           "\nThe message time is: " + form1.GetData[num].Message_Time.ToString() +
+                                           "\nThe message time is: " + form1.GetData[num].Message_Time +
                                            "\nThe message ID is: " + form1.GetData[num].Message_ID);
                         return;
                     }
-
-                    num++;
+                    
                     break;
 
                 case 1: 
@@ -84,15 +83,16 @@ namespace CanLogger1
 
                     if (pCANStatus < 0)
                     {
-                        //tracker = false;
                         Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
-                                           "\nThe message time is: " + form1.GetData[num].Message_Time.ToString() +
+                                           "\nThe message time is: " + form1.GetData[num].Message_Time +
                                            "\nThe message ID is: " + form1.GetData[num].Message_ID);
                         return;
                     }
 
                     break;
             }
+
+            num++;
         }
 
         public void Close()
