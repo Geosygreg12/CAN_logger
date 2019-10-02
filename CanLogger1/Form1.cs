@@ -107,7 +107,7 @@ namespace CanLogger1
             {
                 case 0:
                 case 1:
-                    if(!play) CANTransmitter.initialise(); //add another control variable
+                    if(!play && !CANTransmitterClass.isInitialised) CANTransmitter.initialise(); //add another control variable
                     break;
                 default:
                     MessageBox.Show("Kindly Select an Interface from the Options given", "Message");
@@ -143,6 +143,8 @@ namespace CanLogger1
                 timeUpdateText.Visible = false;
                 PauseButton.Visible = false;
                 progressBar.Visible = false;
+                progressBar.Value = 0;
+                progressBar.Update();
                 progressLabel.Visible = false;
                 if (play) CANTransmitter.Close();
                 status = false;
@@ -280,7 +282,7 @@ namespace CanLogger1
                 if (startTime == Math.Floor(messageTime / 1000) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
                 {
                     //transmit current message
-                    if (control && (canData.Count > CANTransmitterClass.num)) CANTransmitter.Transmitter();
+                    if (canData.Count > CANTransmitterClass.num) CANTransmitter.Transmitter();
                 }
                 else
                 {
@@ -306,6 +308,7 @@ namespace CanLogger1
             {
                 case true:
                     if (startTime <= messageTime) goto default;
+                    else CANTransmitterClass.num++;
                     break;
 
                 case false:

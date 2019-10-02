@@ -51,9 +51,13 @@ namespace CanLogger1
 
                     break;
             }
+
+            isInitialised = true;
         }
 
         public static int num = 0;
+        internal static bool isInitialised = false;
+
         public void Transmitter()
         {
             switch (form1.GetInterface)
@@ -110,6 +114,8 @@ namespace CanLogger1
                     PCANBasic.Uninitialize(peakHandle);
                     break;
             }
+
+            isInitialised = false;
         }
 
         private void errorControl(int handle = 1, Canlib.canStatus status = Canlib.canStatus.canOK, string location = "\0")
