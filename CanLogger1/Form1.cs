@@ -23,12 +23,12 @@ namespace CanLogger1
         {
             if (play)                                  //play is a bool that controls transmission. Is transmission ongoing? Yes, fatal error, exit.
             {
+                StopButton_Click(this, EventArgs.Empty);
                 DialogResult result = MessageBox.Show("You just changed the interface, Transmission will stop now" +
                             " You will have to restart the application", "Fatal Error", MessageBoxButtons.OKCancel, MessageBoxIcon.Error);
 
                 if (result.Equals(DialogResult.OK))
                 {
-                    StopButton_Click(this, EventArgs.Empty);
                     Environment.Exit(1);
                 }
                 else InterfaceComboBox.SelectedIndex = 0;
@@ -158,6 +158,7 @@ namespace CanLogger1
                 progressLabel.Text = "NO Transmission";
                 timeUpdateText.Text = string.Empty;
                 play = false;
+                timeReached = true;
                 stopwatch.Reset();                              //reset stop watch
                 progressBarTimer.Enabled = false;
                 CANTransmitterClass.num = 0;                    //reset the transmission index to zero, num is an in variable that indicates the particular can message to transmit
@@ -312,13 +313,27 @@ namespace CanLogger1
             }
         }
 
+        bool timeReached = true;
+
         //handle till end of log file mode of transmission
         private void TillEndOfFileModeSelected(float messageTime)
         {
             switch (int.TryParse(timeText.Text, out startTime))
             {
                 case true:
-                    if (startTime <= messageTime) goto default;         //transmit if the message time at the current index is greater than the start time
+                    //transmit if the message time at the current index is greater than the start time
+                    if (startTime <= messageTime && canData.Count > CANTransmitterClass.num)
+                    {
+                        if (startTime == (Math.Floor(messageTime / 1000) * 1000) && timeReached)
+                        {
+                            stopwatch.Restart();                        //restart the stopwatch to work with the custom time
+                            timeReached = false;                        //time reached is bool used to make this code run once
+                        }
+
+                        //transmit if elapsed milliseconds is greater than message time intervals
+                        float customTime = messageTime - startTime;
+                        if (stopwatch.IsRunning && (stopwatch.ElapsedMilliseconds >= customTime)) CANTransmitter.Transmitter();
+                    } 
                     else CANTransmitterClass.num++;                     //else go to the next index
                     break;
 
