@@ -52,34 +52,33 @@ namespace CanLogger1
                     break;
             }
         }
+
         public static int num = 0;
         public void Transmitter()
         {
             switch (form1.GetInterface)
             {
                 case 0:
-                    Canlib.canStatus writeStatus = Canlib.canStatus.canOK;
 
-                    Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData[num].Message_ID, 16), form1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
-                    writeStatus = Canlib.canWriteSync(canHandle, 500);
-
-                    if (writeStatus < 0)
+                    if (form1.GetData.Count > num)
                     {
-                        //tracker = false;
-                        Console.WriteLine("Writing file failed,  can status: " + writeStatus +
-                                           "\nThe message time is: " + form1.GetData[num].Message_Time +
-                                           "\nThe message ID is: " + form1.GetData[num].Message_ID);
-                        return;
+                        Canlib.canWrite(canHandle, Convert.ToInt32(form1.GetData[num].Message_ID, 16), form1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
                     }
+                    else return;   
                     
                     break;
 
-                case 1: 
-                    pCANMsg.DATA = form1.GetData[num].CAN_Message;
-                    pCANMsg.ID = Convert.ToUInt32(form1.GetData[num].Message_ID, 16);
-                    pCANMsg.LEN = Convert.ToByte(form1.GetData[num].Message_Length);
+                case 1:
 
-                    pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
+                    if (form1.GetData.Count > num)
+                    {
+                        pCANMsg.DATA = form1.GetData[num].CAN_Message;
+                        pCANMsg.ID = Convert.ToUInt32(form1.GetData[num].Message_ID, 16);
+                        pCANMsg.LEN = Convert.ToByte(form1.GetData[num].Message_Length);
+
+                        pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
+                    }
+                    else return;
 
                     if (pCANStatus < 0)
                     {
@@ -119,8 +118,6 @@ namespace CanLogger1
             {
                 string msg = "\0";
                 Canlib.canGetErrorText((Canlib.canStatus)handle, out msg);
-                //System.Windows.Forms.DialogResult dialogResult = System.Windows.Forms.MessageBox.Show("Handle error: " + msg + " \nThe location is: " + location, "Error",
-                //System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 Console.WriteLine("Handle error: " + msg + " \nThe location is: " + location);
 
                 Environment.Exit(1);
@@ -131,7 +128,6 @@ namespace CanLogger1
                 Console.WriteLine("A Can operation has failed: " + location);
                 System.Windows.Forms.MessageBox.Show("A Can operation has failed: " + location, "Error",
                     System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                //throw new Exception("CAN Operation cannot be executed at: " + location);
             }
         }
     }

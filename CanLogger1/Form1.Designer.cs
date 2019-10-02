@@ -108,7 +108,6 @@
             this.startButton.Text = "START";
             this.startButton.UseVisualStyleBackColor = true;
             this.startButton.Click += new System.EventHandler(this.StartButton_Click);
-            //this.startButton.Click += stpBtn;
             // 
             // stopButton
             // 
@@ -227,7 +226,6 @@
             this.radioPanel.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
@@ -249,10 +247,6 @@
         private const System.Int32 MESSAGE_ID_INDEX = 2;
         private const System.Int32 LENGTH_BIT_INDEX = 5;
         private const System.Int32 MESSAGE_INDEX = 6;
-        private System.Int64 streamLength;
-        private System.Int64 streamVar = 1;
-        private System.Int32 progressPercent;
-        private System.Int64 previousTime = 0;
         private System.Boolean status = false;
         private System.Windows.Forms.Button PauseButton;
         private System.IO.StreamReader streamReader;
@@ -263,7 +257,6 @@
         private System.Windows.Forms.Label interfaceLabel;
         private System.Int32 INTERFACE = 0;
         private System.Collections.Generic.List<DataParameters> canData = new System.Collections.Generic.List<DataParameters>();
-        private System.Threading.Thread readLogthread;
         private System.Threading.Thread transmitLogthread;
         private System.Boolean play = false;
         System.Windows.Forms.RadioButton Var;

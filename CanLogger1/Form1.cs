@@ -21,7 +21,6 @@ namespace CanLogger1
         public Form1()
         {
             CANTransmitter.form1 = this;
-            ProgressChanged += updateProgressbar;
             InitializeComponent();
         }
 
@@ -97,8 +96,7 @@ namespace CanLogger1
                 
                 while (!streamReader.EndOfStream) ReadCANLogFile();
 
-                if (streamReader != null && streamReader.EndOfStream) streamReader.Close();
-
+                if (streamReader != null && streamReader.EndOfStream) streamReader.Close(); 
             });
         }
 
@@ -109,7 +107,7 @@ namespace CanLogger1
             {
                 case 0:
                 case 1:
-                    if(!play) CANTransmitter.initialise();
+                    if(!play) CANTransmitter.initialise(); //add another control variable
                     break;
                 default:
                     MessageBox.Show("Kindly Select an Interface from the Options given", "Message");
@@ -118,7 +116,6 @@ namespace CanLogger1
 
             if (File.Exists(DirText.Text))
             {
-                //streamLength = (long)(streamReader.BaseStream.Length / 50);
                 timeLabel.Visible = true;
                 timeUpdateText.Visible = true;
                 PauseButton.Visible = true;
@@ -126,7 +123,6 @@ namespace CanLogger1
                 Console.WriteLine("Transmission has started");
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
-                progressPercent = 0;
             }
 
             Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked); //get the transmission mode
@@ -137,31 +133,26 @@ namespace CanLogger1
 
         private void StopButton_Click(object sender, EventArgs e)
         {
-            //reset the relevant params
-
-            Console.WriteLine("Stopped at: " + canData[CANTransmitterClass.num].Message_Time);
+            //reset the relevant params 
+            Console.WriteLine("Stopped at: " + canData[CANTransmitterClass.num - 1].Message_Time);
 
             this.BeginInvoke((Action)delegate ()
             {
-                //Thread.Sleep(TimeSpan.Zero); //this is to enable all timer tasks to complete
-                Console.WriteLine("Transmission has stopped");
-                timeLabel.Visible = false;
-                timeUpdateText.Visible = false;
-                streamVar = 1;
-                previousTime = 0;
-                PauseButton.Visible = false;
-                progressBar.Visible = false;
-                progressLabel.Visible = false;
-                if (control || tracker) CANTransmitter.Close();
-                status = false;
-                control = false;
-                tracker = false;
-                listOfLoggedValues.Clear();
-                data.Message_Time = 0;
-                progressLabel.Text = "NO Transmission";
-                play = false;
-                stopwatch.Reset();
-                CANTransmitterClass.num = 0;
+                  Console.WriteLine("Transmission has stopped");
+                  timeLabel.Visible = false;
+                  timeUpdateText.Visible = false;
+                  PauseButton.Visible = false;
+                  progressBar.Visible = false;
+                  progressLabel.Visible = false;
+                  if (play) CANTransmitter.Close();
+                  status = false;
+                  control = false;
+                  listOfLoggedValues.Clear();
+                  data.Message_Time = 0;
+                  progressLabel.Text = "NO Transmission";
+                  play = false;
+                  stopwatch.Reset();
+                  CANTransmitterClass.num = 0;
             });
         }
 
@@ -197,13 +188,12 @@ namespace CanLogger1
         {
             try
             {
-                if (!tracker) OnProgressChanged();
-
                 if (!string.IsNullOrEmpty(loggedMessage))
                     if (loggedMessage.EndsWith("measurement")) control = true; 
 
                 if (control) //control is a bool that is used to indicate where CAN data starts in the log file
                 {
+                    status = true;
                     loggedMessage = streamReader.ReadLine();
 
                     if (!string.IsNullOrEmpty(loggedMessage)) listOfLoggedValues = loggedMessage.Split(' ').ToList();
@@ -211,13 +201,7 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
-                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) //if we have reached to end of the log file
-                    {
-                        OnProgressChanged();
-                        tracker = true;
-                        status = false;
-                        return;
-                    }
+                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) { status = false; return; } //if we have reached to end of the log file
 
                     if (!listOfLoggedValues.Contains("Rx")) { status = false; return; }
 
@@ -253,13 +237,11 @@ namespace CanLogger1
                 Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
             }
         }
-
-        bool tracker = false; //tracks whenever we read from file to enable transmission
+        
         private Stopwatch stopwatch = new Stopwatch(); //makes sure transmitted messages are timed
         private void readLogTransmitEnable()
         {
-            //get which radio button is checked
-            if (canData.Count == CANTransmitterClass.num && control && tracker && !status)
+            if (canData.Count == CANTransmitterClass.num && play)
             {
                 StopButton_Click(this, EventArgs.Empty);
                 MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -273,96 +255,72 @@ namespace CanLogger1
             switch (Var.Name)
             {
                 case "singleRadio":
-                    if (int.TryParse(timeText.Text, out startTime))
-                    {
-                        if (startTime == Math.Floor(messageTime / 1000) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
-                        {
-                            //transmit current message
-                            if (control && (canData.Count > CANTransmitterClass.num))  CANTransmitter.Transmitter(); 
-                        }
-                        else
-                        {
-                            if (startTime < messageTime) //else is start time passed? no, finish
-                            {
-                                StopButton_Click(this, EventArgs.Empty);
-                                MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                return;
-                            }
-                            else CANTransmitterClass.num++; 
-                        }
-                    }
-                    else
-                    {
-                        StopButton_Click(this, EventArgs.Empty);
-                        MessageBox.Show("Enter only numbers in the time search space", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+
+                    singleModeSelected(messageTime);
                     break;
 
                 case "tillEndRadio":
                 default:
-                    switch (int.TryParse(timeText.Text, out startTime))
+
+                    tillEndOfFileModeSelected(messageTime);
+                    break;    
+            }
+        }
+
+        private void singleModeSelected(float messageTime)
+        {
+            if (int.TryParse(timeText.Text, out startTime))
+            {
+                if (startTime == Math.Floor(messageTime / 1000) * 1000) //for single transmission, is the message time approx = starttime? yes, transmit
+                {
+                    //transmit current message
+                    if (control && (canData.Count > CANTransmitterClass.num)) CANTransmitter.Transmitter();
+                }
+                else
+                {
+                    if (startTime < messageTime) //else is start time passed? no, finish
                     {
-                        case true:
-                            if (startTime <= messageTime) goto default;
-                            break;
-
-                        case false:
-                        default:
-
-                            if (stopwatch.IsRunning)
-                            {
-                                if ((stopwatch.ElapsedMilliseconds >= messageTime) && (canData.Count > CANTransmitterClass.num))
-                                {
-                                    CANTransmitter.Transmitter();
-                                }
-                            }
-                            else stopwatch.Start();
-
-                            break;
+                        StopButton_Click(this, EventArgs.Empty);
+                        MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
                     }
+                    else CANTransmitterClass.num++;
+                }
+            }
+            else
+            {
+                StopButton_Click(this, EventArgs.Empty);
+                MessageBox.Show("Enter only numbers in the time search space", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void tillEndOfFileModeSelected(float messageTime)
+        {
+            switch (int.TryParse(timeText.Text, out startTime))
+            {
+                case true:
+                    if (startTime <= messageTime) goto default;
+                    break;
+
+                case false:
+                default:
+
+                    if (stopwatch.IsRunning)
+                    {
+                        if ((stopwatch.ElapsedMilliseconds >= messageTime) && (canData.Count > CANTransmitterClass.num))
+                        {
+                            CANTransmitter.Transmitter();
+                        }
+                    }
+                    else stopwatch.Start();
+
                     break;
             }
         }
-
-        private delegate void updateProgressBarEventHandler(object source, EventArgs e);
-
-        private event updateProgressBarEventHandler ProgressChanged;
-        protected virtual void OnProgressChanged()
-        {
-            if (ProgressChanged != null) ProgressChanged(this, EventArgs.Empty);
-        }
-        
+                
         private void backgroundFuncToTransmitLog()
         {
-            while (play)
-            {
-                if (canData.Count > CANTransmitterClass.num)
-                {
-                    CANTransmitter.Transmitter();
-                    //readLogTransmitEnable();
-                }
-            }
-        }
-        private void updateProgressbar(object source, EventArgs e)
-        {
-            //this.BeginInvoke((Action)delegate ()
-            //{
-            //    if (tracker)
-            //    {
-            //        progressLabel.Text = "Waiting for transmission to finish...";
-            //        progressBar.Value = 100;
-            //        progressBar.Update();
-            //    }
-            //    else if (progressBar.Maximum > progressPercent)
-            //    {
-            //        progressPercent = (int)((streamVar++ * 100) / streamLength);
-            //        progressLabel.Text = string.Format("Processing ... {0}%", progressPercent);
-            //        progressBar.Value = progressPercent;
-            //        progressBar.Update();
-            //    }
-
-            //    if (canData.Count > 0) timeUpdateText.Text = (canData[0].Message_Time * 1000).ToString(); //send live update to UI to keep track of message time
-            //});
+            while (play) readLogTransmitEnable();
         }
     }
 }
