@@ -232,7 +232,7 @@ namespace CanLogger1
                     if ((!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) || ( data.Message_Length == 0)) { status = false; return; } 
 
                     data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
-                    data.CAN_Message = new Byte[data.Message_Length];
+                    data.CAN_Message = new byte[8];
 
                     //here we process the can messages and convert them to bytes, ready for retransmission
                     for (int i = MESSAGE_INDEX, j = 0; i < (MESSAGE_INDEX + data.Message_Length); i++, j++)
