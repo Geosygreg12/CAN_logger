@@ -108,10 +108,10 @@ namespace CanLogger1
             {
                 case 0:
                 case 1:
-                    if(!play && !CANTransmitterClass.isInitialised) CANTransmitter.Initialise();    // initialise the can transmitter class
+                    if(!play && !CANTransmitterClass.isInitialised && File.Exists(DirText.Text)) CANTransmitter.Initialise();    // initialise the can transmitter class
                     break;
                 default:
-                    MessageBox.Show("Kindly Select an Interface from the Options given", "Message"); // if no interface is selected, incline user to select and return
+                    MessageBox.Show("Kindly Select an Interface from the Options Given and Choose a Valid Log File", "Message"); // if no interface is selected, incline user to select and return
                     return; 
             }
 
@@ -126,6 +126,11 @@ namespace CanLogger1
                 progressBar.Visible = true;
                 progressLabel.Visible = true;
                 progressBarTimer.Enabled = true;
+            }
+            else
+            {
+                MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
 
             //get the mode of transmission selected from the group of radio buttons
@@ -161,7 +166,7 @@ namespace CanLogger1
                 timeReached = true;
                 stopwatch.Reset();                              //reset stop watch
                 progressBarTimer.Enabled = false;
-                CANTransmitterClass.num = 0;                    //reset the transmission index to zero, num is an in variable that indicates the particular can message to transmit
+                CANTransmitterClass.num = 0;                    //reset the transmission index to zero, num is a variable that indicates the particular can message to transmit
             });
         }
 
@@ -217,7 +222,7 @@ namespace CanLogger1
                     //remove empty or white spaces
                     while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
 
-                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) { status = false; return; }   //have we have reached to end of the log file?
+                    if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) { status = false; return; }   //have we reached to end of the log file?
 
                     if (!listOfLoggedValues.Contains("Rx")) { status = false; return; }                 //we want to retransmit only the previously received 'Rx' can messages
 
@@ -297,7 +302,7 @@ namespace CanLogger1
                 }
                 else
                 {
-                    if (startTime < messageTime)                            //else is start time passed? no, finish
+                    if (startTime < messageTime)                            //else has start time passed? yes, finish
                     {
                         StopButton_Click(this, EventArgs.Empty);
                         MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, MessageBoxIcon.Information);
