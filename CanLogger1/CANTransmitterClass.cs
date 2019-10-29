@@ -78,8 +78,23 @@ namespace CanLogger1
                     if (Form_1.GetData.Count > num)
                     {
                         //write data to the can bus
-                        Canlib.canWrite(canHandle, Convert.ToInt32(Form_1.GetData[num].Message_ID, 16), 
-                            Form_1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
+                        switch (Form_1.GetData[num].Extended)
+                        {
+
+                            case true:
+
+                                Canlib.canWrite(canHandle, Convert.ToInt32(Form_1.GetData[num].Message_ID, 16),
+                                    Form_1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
+
+                                break;
+
+                            case false:
+
+                                Canlib.canWrite(canHandle, Convert.ToInt32(Form_1.GetData[num].Message_ID, 16),
+                                    Form_1.GetData[num].CAN_Message, 8, 0);
+
+                                break;
+                        }
 
                     }
                     else return;   
@@ -90,11 +105,29 @@ namespace CanLogger1
 
                     if (Form_1.GetData.Count > num)
                     {
-                        pCANMsg.DATA = Form_1.GetData[num].CAN_Message;
-                        pCANMsg.ID = Convert.ToUInt32(Form_1.GetData[num].Message_ID, 16);
-                        pCANMsg.LEN = Convert.ToByte(Form_1.GetData[num].Message_Length);
+                        switch (Form_1.GetData[num].Extended) 
+                        {
 
-                        pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
+                            case true:
+
+                                pCANMsg.MSGTYPE = TPCANMessageType.PCAN_MESSAGE_EXTENDED; 
+                                goto default; 
+
+                            case false: 
+                                
+                                pCANMsg.MSGTYPE = TPCANMessageType.PCAN_MESSAGE_STANDARD;
+                                goto default;
+
+                            default:
+                                pCANMsg.DATA = Form_1.GetData[num].CAN_Message;
+                                pCANMsg.ID = Convert.ToUInt32(Form_1.GetData[num].Message_ID, 16);
+                                pCANMsg.LEN = Convert.ToByte(Form_1.GetData[num].Message_Length);
+
+                                pCANStatus = PCANBasic.Write(peakHandle, ref pCANMsg);
+
+                                break;
+                        
+                        } 
                     }
                     else return;
 

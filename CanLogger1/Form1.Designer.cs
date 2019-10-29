@@ -284,6 +284,7 @@
             public float Message_Time;
             public System.Byte[] CAN_Message;
             public string Message_ID;
+            public bool Extended;
         }
         
         public System.Collections.Generic.List<DataParameters> GetData { get => this.canData; }

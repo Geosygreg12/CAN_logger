@@ -345,9 +345,23 @@ namespace CanLogger1
                         status = false;
 
                         return;
-                    } 
+                    }
 
-                    data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
+                    if (listOfLoggedValues[MESSAGE_ID_INDEX].ToCharArray().Contains('x'))
+                    {
+                        char[] ch = listOfLoggedValues[MESSAGE_ID_INDEX].ToCharArray();
+
+                        ch = ch.Where(val => val != 'x').ToArray();
+
+                        data.Message_ID = new string(ch);
+                        data.Extended = true;
+                    }
+                    else
+                    {
+                        data.Extended = false;
+                        data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX]; 
+                    }
+
                     data.CAN_Message = new byte[8];
 
                     //here we process the can messages and convert them to bytes, ready for retransmission
