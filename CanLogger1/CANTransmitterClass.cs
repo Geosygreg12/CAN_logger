@@ -34,9 +34,24 @@ namespace CanLogger1
 
                     //check whether handle was gotten successfully
                     ErrorControl(handle: canHandle, location: "canOpenChannel: initialise()");
-
+                    
                     //set the relevant can bus parameters
-                    status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);  
+                    switch (Form_1.BAUDRATE)
+                    {
+                        case 0:
+                            status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_250K, 0, 0, 0, 0, 0);
+                            break;
+
+                        case 1:
+                            status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
+                            break;
+
+                        default:
+                            status = Canlib.canSetBusParams(canHandle, Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
+                            break;
+                    }
+
+
                     ErrorControl(status: this.status, location: "canSetBusParams: initialise()");
                     Canlib.canSetBusOutputControl(canHandle, Canlib.canDRIVER_NORMAL);
 
@@ -49,7 +64,18 @@ namespace CanLogger1
                 case 1: 
 
                     peakHandle = PCANBasic.PCAN_USBBUS1;
-                    pCANBaudrate = TPCANBaudrate.PCAN_BAUD_500K;
+
+                    switch (Form_1.BAUDRATE) {
+                        case 0: pCANBaudrate = TPCANBaudrate.PCAN_BAUD_250K;
+                            break;
+
+                        case 1: pCANBaudrate = TPCANBaudrate.PCAN_BAUD_500K;
+                            break;
+
+                        default: pCANBaudrate = TPCANBaudrate.PCAN_BAUD_500K;
+                            break;
+                    }
+                    
 
                     if (PCANBasic.Initialize(peakHandle, pCANBaudrate) == TPCANStatus.PCAN_ERROR_INITIALIZE)
                     {

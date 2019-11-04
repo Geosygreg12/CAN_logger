@@ -478,6 +478,8 @@ namespace CanLogger1
 
         bool timeReached = true;
 
+        public int BAUDRATE { get; private set; }
+
         //handle till end of log file mode of transmission
         private void TillEndOfFileModeSelected(float messageTime)
         {
@@ -552,6 +554,23 @@ namespace CanLogger1
 
             });
 
+        }
+
+        private void BaudrateComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+            if (play)
+            {
+                StopButton_Click(this, EventArgs.Empty);
+                DialogResult result = MessageBox.Show("You just changed the Baudrate, " +
+                                                      "Transmission will stop now ",
+                                                      "Fatal Error", MessageBoxButtons.OKCancel,
+                                                       MessageBoxIcon.Error);
+            }
+
+
+            //populate the selected interface
+            BAUDRATE = baudRateComboBox.SelectedIndex;
         }
     }
 }
