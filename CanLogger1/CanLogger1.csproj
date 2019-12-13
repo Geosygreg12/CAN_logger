@@ -81,17 +81,24 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CANTransmitterClass.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="CAN_Channel.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="CAN_Channel.Designer.cs">
+      <DependentUpon>CAN_Channel.cs</DependentUpon>
     </Compile>
+    <Compile Include="CAN_DataProperties.cs" />
     <Compile Include="PCANBasic.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="SetUp.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SetUp.Designer.cs">
+      <DependentUpon>SetUp.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="CAN_Channel.resx">
+      <DependentUpon>CAN_Channel.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -103,6 +110,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="SetUp.resx">
+      <DependentUpon>SetUp.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="CanLogger1_TemporaryKey.pfx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
