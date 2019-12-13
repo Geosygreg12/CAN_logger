@@ -641,8 +641,8 @@ namespace CanLogger1
                 INTERFACE[1] = InterfaceComboBox.SelectedIndex;
             }
 
-            if (numOfChanUpnDwn.Maximum == 1) startButton.Enabled = true;
-            else if (!(BAUDRATE[1] == -1 && INTERFACE[1] == -1) && !(BAUDRATE[0] == -1 && INTERFACE[0] == -1)) {
+            if (numOfChanUpnDwn.Maximum == 1 && !(BAUDRATE[0] == -1 || INTERFACE[0] == -1)) startButton.Enabled = true;
+            else if (!(BAUDRATE[1] == -1 || INTERFACE[1] == -1) && !(BAUDRATE[0] == -1 || INTERFACE[0] == -1)) {
                 startButton.Enabled = true;
             }
         }
