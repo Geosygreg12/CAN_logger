@@ -37,15 +37,17 @@
             // questionLabel
             // 
             this.questionLabel.AutoSize = true;
-            this.questionLabel.Location = new System.Drawing.Point(107, 41);
+            this.questionLabel.Location = new System.Drawing.Point(80, 33);
+            this.questionLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.questionLabel.Name = "questionLabel";
-            this.questionLabel.Size = new System.Drawing.Size(321, 21);
+            this.questionLabel.Size = new System.Drawing.Size(196, 13);
             this.questionLabel.TabIndex = 0;
             this.questionLabel.Text = "How many CAN channels do you need?";
             // 
             // numberOfCANChannels
             // 
-            this.numberOfCANChannels.Location = new System.Drawing.Point(400, 41);
+            this.numberOfCANChannels.Location = new System.Drawing.Point(300, 33);
+            this.numberOfCANChannels.Margin = new System.Windows.Forms.Padding(2);
             this.numberOfCANChannels.Maximum = new decimal(new int[] {
             2,
             0,
@@ -57,7 +59,7 @@
             0,
             0});
             this.numberOfCANChannels.Name = "numberOfCANChannels";
-            this.numberOfCANChannels.Size = new System.Drawing.Size(77, 22);
+            this.numberOfCANChannels.Size = new System.Drawing.Size(58, 20);
             this.numberOfCANChannels.TabIndex = 1;
             this.numberOfCANChannels.Value = new decimal(new int[] {
             1,
@@ -67,22 +69,26 @@
             // 
             // ContinueButton
             // 
-            this.ContinueButton.Location = new System.Drawing.Point(207, 94);
+            this.ContinueButton.BackColor = System.Drawing.SystemColors.InactiveCaption;
+            this.ContinueButton.Location = new System.Drawing.Point(155, 76);
+            this.ContinueButton.Margin = new System.Windows.Forms.Padding(2);
             this.ContinueButton.Name = "ContinueButton";
-            this.ContinueButton.Size = new System.Drawing.Size(102, 31);
+            this.ContinueButton.Size = new System.Drawing.Size(76, 25);
             this.ContinueButton.TabIndex = 2;
             this.ContinueButton.Text = "Continue";
-            this.ContinueButton.UseVisualStyleBackColor = true;
-            this.ContinueButton.Click += new System.EventHandler(this.button1_Click);
+            this.ContinueButton.UseVisualStyleBackColor = false;
+            this.ContinueButton.Click += new System.EventHandler(this.Continue_Button);
             // 
             // SetUp
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(520, 164);
+            this.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.ClientSize = new System.Drawing.Size(390, 133);
             this.Controls.Add(this.ContinueButton);
             this.Controls.Add(this.numberOfCANChannels);
             this.Controls.Add(this.questionLabel);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "SetUp";
             this.Text = "SetUp";
             ((System.ComponentModel.ISupportInitialize)(this.numberOfCANChannels)).EndInit();

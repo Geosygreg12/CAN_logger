@@ -6,36 +6,160 @@ using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace CanLogger1
 {
+
+
     public partial class CAN_Channel : Form
     {
-        public CANTransmitterClass CANTransmitter = new CANTransmitterClass();
 
-        int numChans = 0;
+        public static int numOfChan =                           0;
+        string[] lastDirPath =                                  new string[2]; 
+        float timeOffset =                                      0.0f;
+        public static bool setUpComp =                          false;
+        static bool isPaused =                                  false;
+        static int[] progressIndex =                            { 0,0};
+        static DateTime startTime;
+        static DateTime transmissionTime;
+
+        public static CAN_INTERFACE[] _INTERFACEs =             new CAN_INTERFACE[2];
+        public static CAN_BAUDRATE[] _BAUDRATEs =               new CAN_BAUDRATE[2];
+
+        public bool[] ChanSet;
+        public static bool[] taskCompleted;
+
+        public string[] CAN_Directories =                       new string[2];
+
+        static List<List<DataParameters>> CAN_INFO =            new List<List<DataParameters>>();
+
+        DateTime pauseTime =                                    DateTime.Now;
+        TimeSpan pauseTimeSpan =                                TimeSpan.Zero;
+
+        System.Windows.Forms.Timer progressBarTimer =           new System.Windows.Forms.Timer() { 
+        
+            Interval = 100,
+        };
 
         public CAN_Channel(int numChan = 1)
         {
-            this.numChans = numChan; 
             InitializeComponent();
 
-            BAUDRATE = new int[2] { -1, -1};
-            numOfChanUpnDwn.Minimum = 1;
-            numOfChanUpnDwn.Maximum = numChan;
-            CANTransmitter.Form_1 = this;
-            this.FormClosing += CAN_Channel_FormClosing;
-            startButton.Enabled = false;
+            canChanNum.Maximum =                                numChan;
+            numOfChan =                                         numChan;
+            ChanSet =                                           new bool[numChan];
+            taskCompleted =                                     new bool[numChan];
+            this.FormClosing +=                                 CAN_Channel_FormClosing;
+            progressBarTimer.Tick +=                            updateProgressBar;
         }
 
-        private void CAN_Channel_FormClosing(object sender, FormClosingEventArgs e)
+        private void updateProgressBar(object sender, EventArgs e)
         {
-            StopButton_Click(this, EventArgs.Empty);
+            decimal value =                                     (decimal)((progressIndex[1] + 1) * 100) / CAN_INFO[progressIndex[0]].Count();
+
+            if (value > 100)                                    value =100;
+
+            progressBar1.Value =                                (int) value;
+
+            if (!taskCompleted.Contains(false))                 StopButton_Click(this, EventArgs.Empty);
+        }
+
+        private void StartButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if ((CAN_INFO.Count > 0) && setUpComp)
+                {
+                    PauseButton.Text =                          "Pause";
+                    BrowseButton.Enabled =                      false;
+                    SetButton.Enabled =                         false;
+                    startButton.Enabled =                       false;
+                    startTime =                                 DateTime.Now;
+                    transmissionTime =                          DateTime.Now;
+                    progressBarTimer.Enabled =                  true;
+
+                    CANTransmitterClass.initialiseCAN();
+
+                    isStarted = true;
+                    transmitLogthread =                         new Thread(BackgroundFuncToTransmitLog);
+
+
+                    transmitLogthread.Start();
+
+                }
+                else
+                {
+
+                    MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            catch (Exception ex) {
+
+                Console.WriteLine(ex.Message);
+            }
+            
         }
 
 
-        //get selected interface
-       
+
+        private void StopButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                //reset the relevant params 
+                this.BeginInvoke((Action)delegate ()
+                {
+
+                    BrowseButton.Enabled =                      true;
+                    SetButton.Enabled =                         true;
+
+                    startButton.Enabled =                       true;
+                    isStarted =                                 false;
+                    progressBarTimer.Enabled =                  false;
+                    taskCompleted =                             taskCompleted.Select(value => true ? false : false).ToArray();
+
+                    progressBar1.Value =                        0;
+                    if (transmitLogthread != null)              transmitLogthread.Abort();
+
+                    CANTransmitterClass.Close();
+
+                });
+            }
+            catch (Exception ex) {
+
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        //when the pause button is pressed
+        //pause and continue transmission 
+        private void PauseButton_Click(object sender, EventArgs e) 
+        {
+
+            switch (PauseButton.Text)
+            {
+
+                case "Pause":
+
+                    isPaused =                                  true;
+                    PauseButton.Text =                          "Continue";
+                    pauseTime =                                 DateTime.Now;                               
+
+                    break;
+
+                case "Continue":
+
+                    isPaused =                                  false;
+                    pauseTimeSpan =                             DateTime.Now - pauseTime;
+                    startTime =                                 startTime.Add(pauseTimeSpan);                             
+                    PauseButton.Text =                          "Pause";
+
+                    break;
+
+            }
+        }
 
 
         //browse file directory to get the desired log file to read
@@ -47,17 +171,13 @@ namespace CanLogger1
                 using (OpenFileDialog openFileDialog = new OpenFileDialog())
                 {
 
-                    // the number of files that can be selected at a time
-                    openFileDialog.FilterIndex = 1;                 
+                    openFileDialog.FilterIndex =                4;                 
+                    openFileDialog.Filter =                     "CSV File (*.csv) | *.csv " +
+                                                                "| ASC file (*.asc) | *.asc" +
+                                                                "|Text file (*.txt) | *.txt " +
+                                                                "| All Files (*.*)| *.*";
 
-                    //the only formats that are supported .asc files and .txt files
-                    openFileDialog.Filter = "ASC file (*.asc) | *.asc|Text file (*.txt) | *.txt ";
-
-
-                    //make the textbox text to be the name of the directory of the log file
-                    if (openFileDialog.ShowDialog() == DialogResult.OK)
-                        DirText.Text = openFileDialog.FileName;
-
+                    if (openFileDialog.ShowDialog() ==DialogResult.OK) DirText.Text = openFileDialog.FileName;
                 }
             }
             catch (Exception exception)
@@ -66,585 +186,359 @@ namespace CanLogger1
             }
         }
 
-
-        //focus on the next textbox when enter is pressed in the directory textbox
-        private  void DirText_KeyDown(object sender, KeyEventArgs e)
+        
+        public enum CAN_INTERFACE
         {
-            //enter is pressed after entering the directory text then focus on the next textbox
-            if (e.KeyCode == Keys.Enter) timeText.Focus();
+
+            KVASER,
+            PEAK
+        }
+        public enum CAN_BAUDRATE
+        {
+
+            _250K,
+            _500K
         }
 
 
-        //holds the value of the directory or log file
-        string str = string.Empty; 
-
-
-        // if directory textbox text is changed, then read new log file
-        private async void DirText_TextChanged(object sender, EventArgs e)
+        private void SetButton_Click(object sender, EventArgs e)
         {
 
-            //is transmission ongoing? Yes, stop it.
-            if (play) StopButton_Click(sender, e);
+            int channelIndex =                              (int)canChanNum.Value - 1;
 
-            //clear previous list of can messages so new ones can be populated
-            listOfLoggedValues.Clear();
-
-            
-
-            //run an asynchronous task on another thread to read the log file
-            await Task.Run(() =>
-            {
-
-                if (!str.Equals(DirText.Text))
-                {
-                    //close the reader if it was initialised
-                    if (!string.IsNullOrEmpty(str)) streamReader.Close();
-
-
-                    // update the str string
-                    str = DirText.Text;
-
-                    //clear any previous list of can data
-                    canData.Clear();
-
-                    //initialise the streamreader using the new file dir
-                    if (File.Exists(str)) streamReader = new StreamReader(str, Encoding.ASCII);
-                    else
-                    {
-                        //if directory or log file does not exist, show user a message and return
-                        MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK,
-                                        MessageBoxIcon.Information);
-
-
-                        return;
-                    }
-                }
-
-
-                    //read the log file to the end
-                while (!streamReader.EndOfStream) ReadCANLogFile();
-
-
-                //close the log file after reading
-                if (streamReader != null && streamReader.EndOfStream)
-                    streamReader.Close();
-            });
-        }
-
-        private void StartButton_Click(object sender, EventArgs e)
-        {
-
-            //initialize the start up values
             switch (InterfaceComboBox.SelectedIndex)
             {
-                case 0:
+
                 case 1:
 
-                    switch (baudRateComboBox.SelectedIndex)
-                    {
-                        case 0:
-                        case 1:
-                            TransmissionSpeed = (short)SpeedComboBox.SelectedIndex;
-
-                            // initialise the can transmitter class
-                            if (!play && !(CANTransmitterClass.isKvaserInitialised || CANTransmitterClass.isPeakInitialiased) && File.Exists(DirText.Text))
-                            {
-                                for (int i = 0; i < numOfChanUpnDwn.Maximum; i++)
-                                {
-                                    CANTransmitter.Initialise(GetInterface[i], BAUDRATE[i]);
-                                }
-                            }
-                            
-                            break;
-
-                        default:
-
-                            // if no interface is selected, incline user to select and return
-                            MessageBox.Show("Kindly Select a Baudrate from the Options Given " +
-                                            "and Choose a Valid Log File", "Message");
-
-                            return;
-                    }
+                    _INTERFACEs[channelIndex] =             CAN_INTERFACE.PEAK;
                     break;
+
+                case 0:
 
                 default:
 
-                    // if no interface is selected, incline user to select and return
-                    MessageBox.Show("Kindly Select an Interface from the Options Given " +
-                                    "and Choose a Valid Log File", "Message");
-
-
-                    return;
+                    _INTERFACEs[channelIndex] =             CAN_INTERFACE.KVASER;
+                    break;
             }
 
-
-            if (File.Exists(DirText.Text))
+            switch (baudRateComboBox.SelectedIndex)
             {
 
-                //make the time label, progress bar and label to be visible
-                PauseButton.Visible = true;
-                PauseButton.Text = "Pause";
-                Console.WriteLine("Transmission has started");
-                progressBar.Visible = true;
-                progressLabel.Visible = true;
-                progressBarTimer.Enabled = true;
+                case 0:
 
+                    _BAUDRATEs[channelIndex] =              CAN_BAUDRATE._250K;
+                    break;
+                case 1:
+
+                default:
+
+                    _BAUDRATEs[channelIndex] =              CAN_BAUDRATE._500K;
+                    break;
             }
-            else
+
+            switch (channelIndex)
             {
 
-                MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                case 0:
 
-                return;
+                case 1:
 
+                    ChanSet[channelIndex] =                 true;
+                    CAN_Directories[channelIndex] =         DirText.Text;
+
+                    break;
             }
 
-            //get the mode of transmission selected from the group of radio buttons
-            Var = radioPanel.Controls.OfType<RadioButton>().FirstOrDefault(r => r.Checked);
+            setUpComp =                                     !ChanSet.Contains(false);
 
-            //set true to start transmission
-            play = true;
-            transmitLogthread = new Thread(BackgroundFuncToTransmitLog);
+            if (setUpComp)
+            {
 
-            //start transmission on a new thread
-            transmitLogthread.Start();
-
-            //start the stopwatch, to time the can message transmission
-            stopwatch.Start();
+                processCAN_Dir();
+                startButton.Enabled =                       true;
+                CANTransmitterClass.initialiseCAN();
+            }
         }
 
-        private void StopButton_Click(object sender, EventArgs e)
-        {
 
-            //reset the relevant params 
-            this.BeginInvoke((Action)delegate ()
-            {
+        private async void processCAN_Dir() {
 
-                //make the time lable, progress label and bar invisible 
-                Console.WriteLine("Transmission has stopped");
+            List<Task> CAN_ReadTasks =                      new List<Task>();
+            List<DataParameters> can_INFO =                 new List<DataParameters>();
+            bool csvFlag =                                  false;
+            Encoding encoding =                             Encoding.UTF8;
+
+            for (int i = 0; i < numOfChan; i++) {
                 
-                progressBar.Visible = false;
-                progressBar.Value = 0;
-                progressBar.Update();
-                progressLabel.Visible = false;
-                
-                
-                //close the transmitter
-                if (play || PauseButton.Visible)
-                {
-                    CANTransmitter.Close(GetInterface);
+                int index =                                 i;
+
+
+                switch (Path.GetExtension(CAN_Directories[i]).ToLower()) {
+
+                    case ".csv":
+
+                        csvFlag =                           true;
+                        encoding =                          Encoding.UTF8;
+
+                        goto default;
+
+                    case ".asc":
+
+                        csvFlag =                           false;
+                        encoding =                          Encoding.ASCII;
+
+                        goto default;
+
+                    default:
+
+                        ReadDelegate read = (_index) =>
+                        {
+
+                            Action act = (Action)delegate ()
+                            {
+
+                                if(!lastDirPath.SequenceEqual(CAN_Directories))
+                                {
+                                    Array.Copy(CAN_Directories, lastDirPath, CAN_Directories.Length);
+                                    CAN_INFO.Clear();
+
+                                    if (File.Exists(lastDirPath[_index]))
+                                    {
+
+                                        using (streamReader = new StreamReader(lastDirPath[_index], encoding))
+                                        {
+
+                                            while (!streamReader.EndOfStream)
+                                            {
+
+                                                DataParameters data = ReadCANLogFile(csvFlag);
+                                                if (data != null) can_INFO.Add(data);
+
+                                            }
+
+                                        }
+
+                                        CAN_INFO.Add(can_INFO);
+                                        timeOffset = 0.0f;
+                                        
+                                    }
+                                    else
+                                    {
+
+                                        MessageBox.Show("Wrong Directory! Try Again", "Error", MessageBoxButtons.OK,
+                                                        MessageBoxIcon.Information);
+
+                                        Console.WriteLine(CAN_Directories[_index]);
+                                    }
+                                }
+                            };
+
+                            return act;
+                        };
+
+                        CAN_ReadTasks.Add(Task.Run(read(index)));
+                        break;
                 }
-                
-
-                PauseButton.Visible = false;
-                //clear list
-                listOfLoggedValues.Clear();
-
-                
-                data.Message_Time = 0;
-                progressLabel.Text = "NO Transmission";
-                play = false;
-                timeReached = true;
-                stopwatch.Reset();                              
-                
-                //reset stop watch
-                progressBarTimer.Enabled = false;
-
-                /**reset the transmission index to zero, num is a variable 
-                   that indicates the particular can message to transmit */
-                CANTransmitterClass.num = 0;          
-                
-            });
-        }
-
-        //when the pause button is pressed
-        private void PauseButton_Click(object sender, EventArgs e) //pause and continue transmission 
-        {
-
-            switch (PauseButton.Text)
-            {
-
-                case "Pause":
-
-                    //stop 'playing' transmission 
-                    play = false;
-
-                    //change the text to continue
-                    PauseButton.Text = "Continue";
-
-                    //stop the stop watch
-                    stopwatch.Stop();                                   
-
-                    break;
-
-                case "Continue":
-
-                    //start 'playing' transmission
-                    play = true;                                        
-                    transmitLogthread = new Thread(BackgroundFuncToTransmitLog);
-
-                    //restart the transmission on another background thread
-                    transmitLogthread.Start();
-
-                    //start the stopwatch
-                    stopwatch.Start();                                  
-                    PauseButton.Text = "Pause";
-
-                    break;
-
             }
+
+            await Task.WhenAll(CAN_ReadTasks);
         }
 
-
-        //if the user presses enter after inputing start time, then start transmission
-        private void TimeText_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter) StartButton_Click(sender, e);
-        }
-
-
-        private void TimeText_MouseClick(object sender, MouseEventArgs e)
-        {
-            timeText.SelectAll();
-            timeText.Focus(); 
-        }
-
-        //this method is used to read the log file and process the can values
-        private void ReadCANLogFile()
-        {
-
+        delegate Action ReadDelegate(int index);        
+        
+        private DataParameters ReadCANLogFile(bool csvFlag = false)
+        {                               
+            
             try
             {
+                float messageTime =                         0.0f;
+                byte dataLength =                           0;
+                int channelID =                             0;
+                string messageID =                          "";
+                bool extended =                             false;
+                byte[] messageData =                        new byte[8];
+                List<string> listOfLoggedValues =           new List<string>();
 
-                data = new DataParameters();
+                loggedMessage =                             streamReader.ReadLine();
 
-                //read the next can message from the log file
-                loggedMessage = streamReader.ReadLine();
-
-                if (!string.IsNullOrEmpty(loggedMessage))
-                    listOfLoggedValues = loggedMessage.Split(' ').ToList();
-
-                //remove empty or white spaces
-                while (listOfLoggedValues.Contains(string.Empty))
-                    listOfLoggedValues.Remove(string.Empty);
-
-
-                //have we reached to end of the log file?
-                if (listOfLoggedValues[TIME_INDEX].StartsWith("End")) return; 
-
-
-
-                //we want to retransmit only the previously received 'Rx' can messages
-                if (!listOfLoggedValues.Contains("Rx")) return; 
-
-                //initialize the dataparams with values from the log file
-                if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out data.Message_Time)) return;
-
-                if (int.TryParse(listOfLoggedValues[CAN_CHANNEL_INDEX], out data.CAN_Channel_ID))
+                if (!csvFlag)
                 {
-                    if (data.CAN_Channel_ID > 2) return; 
+                    if (!string.IsNullOrEmpty(loggedMessage)) listOfLoggedValues = loggedMessage.Split(' ').ToList();
                 }
-                else return;
-
-                if ((!int.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out data.Message_Length)) ||
-                    (data.Message_Length == 0)) return; 
-
-                if (listOfLoggedValues[MESSAGE_ID_INDEX].ToCharArray().Contains('x'))
-                {
-                    char[] ch = listOfLoggedValues[MESSAGE_ID_INDEX].ToCharArray();
-
-                    ch = ch.Where(val => val != 'x').ToArray();
-
-                    data.Message_ID = new string(ch);
-                    data.Extended = true;
+                else {
+                    if (!string.IsNullOrEmpty(loggedMessage)) listOfLoggedValues = loggedMessage.Split(',').ToList();
                 }
+
+                if (!csvFlag) {
+                    if (!listOfLoggedValues.Contains("Rx")) return null; 
+                }
+
+                while (listOfLoggedValues.Contains(string.Empty)) listOfLoggedValues.Remove(string.Empty);
+
+                if (!float.TryParse(listOfLoggedValues[TIME_INDEX], out messageTime)) return null;
                 else
                 {
-                    data.Extended = false;
-                    data.Message_ID = listOfLoggedValues[MESSAGE_ID_INDEX];
-                }
+                    if (timeOffset == 0.0f) timeOffset = messageTime;
 
-                data.CAN_Message = new byte[8];
-
-                //here we process the can messages and convert them to bytes, ready for retransmission
-                for (int i = MESSAGE_INDEX, j = 0; i < (MESSAGE_INDEX + data.Message_Length); i++, j++)
-                {
-                    byte Byte = 0;
-
-                    try
+                    if (!csvFlag)
                     {
-                        Byte = Convert.ToByte(listOfLoggedValues[i], 16);
+                        if (int.TryParse(listOfLoggedValues[CAN_CHANNEL_INDEX], out channelID))
+                        {
+                            if (channelID > 2)              return null;
+
+                            if (channelID > numOfChan)      return null;
+                        }
+                        else                                return null;
                     }
-                    catch (Exception exc)
-                    {
-                        Console.WriteLine("Error :" + exc.Message);
+                    else {
+
+                        channelID =                         1;
                     }
 
-                    data.CAN_Message[j] = Byte;
+                    if (!csvFlag)
+                    {
+                        if (byte.TryParse(listOfLoggedValues[LENGTH_BIT_INDEX], out dataLength))
+                        {
+
+                            if (dataLength == 0)            return null;
+                        }
+                    }
+                    else {
+
+                        dataLength =                        8;
+                    }
+
+                    if (!csvFlag)
+                    {
+                        if (listOfLoggedValues[MESSAGE_ID_INDEX].ToCharArray().Contains('x'))
+                        {
+                            char[] ch =                     listOfLoggedValues[MESSAGE_ID_INDEX].ToCharArray();
+
+                            ch =                            ch.Where(val => val != 'x').ToArray();
+
+                            messageID =                     new string(ch);
+                            extended =                      true;
+                        }
+                        else
+                        {
+                            messageID =                     listOfLoggedValues[MESSAGE_ID_INDEX];
+                            extended =                      false;
+
+                        }
+                    }
+                    else {
+                        extended =                          false;
+                        int ID =                            0;
+                        int.TryParse(listOfLoggedValues[1], out ID);
+
+                        messageID =                         ID.ToString("X");
+                    }
+
+                    if (!csvFlag)
+                    {
+                        for (int i = MESSAGE_INDEX; i < (MESSAGE_INDEX + dataLength); i++)
+                        {
+
+                            messageData[i - MESSAGE_INDEX] = Convert.ToByte(
+                                value:                      listOfLoggedValues[i],
+                                fromBase:                   16
+                                );
+                        }
+                    }
+                    else {
+
+                        ulong var =                         ulong.Parse(listOfLoggedValues[2], System.Globalization.NumberStyles.HexNumber);
+                        byte[] bytes =                      BitConverter.GetBytes(var);
+                        messageData =                       bytes;
+                    }
+
+                    return new DataParameters()
+                    {
+                        Message_Time =                      messageTime - timeOffset,
+                        Message_ID =                        messageID,
+                        Message_Length =                    dataLength,
+                        CAN_Message =                       messageData,
+                        Extended =                          extended,
+                        CAN_Channel_ID =                    channelID
+
+                    };
                 }
 
-                //add can data to the list for retransmission
-                if (data.CAN_Message.Length > 0) canData.Add(data);
             }
             catch (Exception exception)
             {
                 //handle any exception
                 Console.WriteLine("An Exception occurred!!! Exception: " + exception.Message);
             }
-        }
-        
-        private Stopwatch stopwatch = new Stopwatch();  
-        private void ReadLogTransmitEnable()
-        {
 
-            //if we have reached the end of log file then end transmission
-            if (canData.Count == CANTransmitterClass.num && play)                               
-            {
-                StopButton_Click(this, EventArgs.Empty);
-                MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-
-                return;
-            }
-
-            //get the message time for the can data to be transmitted in milliseconds
-            float messageTime;
-
-            if (canData.Count > CANTransmitterClass.num) {
-
-                switch (TransmissionSpeed) 
-                {
-                    case 0:
-                        messageTime = (float)canData[CANTransmitterClass.num].Message_Time * 1000; //transmit in milliseconds
-                        break;
-                    case 1:
-                        messageTime = (float)canData[CANTransmitterClass.num].Message_Time * 500; //transmit 
-                        break;
-                    case 2:
-                        messageTime = (float)canData[CANTransmitterClass.num].Message_Time * 400;
-                        break;
-                    case 3:
-                        messageTime = (float)canData[CANTransmitterClass.num].Message_Time / 1000000000; //transmit till end of file
-                        break;
-
-                    default:
-                        messageTime = messageTime = (float)canData[CANTransmitterClass.num].Message_Time * 1000;
-                        break;
-                }
-                
-            }
-            else return;
-
-
-            //transmit just the current message or until end of file
-            switch (Var.Name)
-            {
-                case "singleRadio":
-
-                    SingleModeSelected(messageTime); 
-                    break;
-
-                case "tillEndRadio":
-
-                default:
-
-                    TillEndOfFileModeSelected(messageTime);
-                    break;    
-            }
+            return null;
         }
 
+               
+        delegate Action ParentTransmitDelegate(int index_1);
 
-        //handle single mode transmission
-        private void SingleModeSelected(float messageTime)
-        {
-            if (int.TryParse(timeText.Text, out startTime))
-            {
+        ParentTransmitDelegate parentTransmitDelegate = delegate (int parentIndex) {
 
-                //for single transmission, is the message time approx = starttime? yes, transmit
-                if (startTime == Math.Floor(messageTime / 1000) * 1000)     
-                {
-                    //transmit current message if current index is less than total can messages
-                    if (canData.Count > CANTransmitterClass.num)
-                    {
-                        if (numOfChanUpnDwn.Maximum == 2)
-                        {
-                            CANTransmitter.Transmitter(
-                                CANInterface: INTERFACE[(canData[CANTransmitterClass.num].CAN_Channel_ID) - 1],
-                                whichCAN: canData[CANTransmitterClass.num].CAN_Channel_ID);
-                        }
-                        else if (numOfChanUpnDwn.Maximum == 1)
-                        {
+            return (Action)(() => {
 
-                            CANTransmitter.Transmitter(
-                            CANInterface: INTERFACE[0],
-                            whichCAN: 1);
-                        }
-                    }
-                }
-                else
-                {
+                for (int i = 0; i < CAN_INFO[parentIndex].Count(); i++) {
 
-                    //else has start time passed? yes, finish
-                    if (startTime < messageTime)                            
-                    {
-                        StopButton_Click(this, EventArgs.Empty);
-                        MessageBox.Show("Transmission finished", "Message", MessageBoxButtons.OK, 
-                            MessageBoxIcon.Information);
+                    while (isPaused) {
 
-                        return;
-                    }
-                    else CANTransmitterClass.num++;
-
-                }
-            }
-            else                                                            
-            {
-
-                //else if the start time is wrong alert the user
-                StopButton_Click(this, EventArgs.Empty);
-                MessageBox.Show("Enter only numbers in the time search space", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-            }
-        }
-
-
-        bool timeReached = true;
-
-        public int[] BAUDRATE { get; private set; }
-
-        //handle till end of log file mode of transmission
-        private void TillEndOfFileModeSelected(float messageTime)
-        {
-            switch (int.TryParse(timeText.Text, out startTime))
-            {
-                case true:
-
-                    //transmit if the message time at the current index is greater than the start time
-                    if (startTime <= messageTime && canData.Count > CANTransmitterClass.num)
-                    {
-                        if (startTime == (Math.Floor(messageTime / 1000) * 1000) && timeReached)
-                        {
-                            //restart the stopwatch to work with the custom time
-                            stopwatch.Restart();
-
-                            //time reached is bool used to make this code run once
-                            timeReached = false;                        
-                        }
-
-                        //transmit if elapsed milliseconds is greater than message time intervals
-                        float customTime = messageTime - startTime;
-                        if (stopwatch.IsRunning && (stopwatch.ElapsedMilliseconds >= customTime))
-                        {
-                            if (numOfChanUpnDwn.Maximum == 2)
-                            {
-                                CANTransmitter.Transmitter(
-                                    CANInterface: INTERFACE[(canData[CANTransmitterClass.num].CAN_Channel_ID) - 1],
-                                    whichCAN: canData[CANTransmitterClass.num].CAN_Channel_ID);
-                            }
-                            else if (numOfChanUpnDwn.Maximum == 1)
-                            {
-                                CANTransmitter.Transmitter(
-                                CANInterface: INTERFACE[0],
-                                whichCAN: 1);
-                            }
-                        }
-
-                    } 
-                    else CANTransmitterClass.num++;  //else go to the next index
-
-                    break;
-
-                case false:
-
-                default:
-
-                    //use the stop watch to time the transmission time properly
-                    if (stopwatch.IsRunning)
-                    {
-                        if ((stopwatch.ElapsedMilliseconds >= messageTime) &&
-                            (canData.Count > CANTransmitterClass.num))
-                        {
-                            if (numOfChanUpnDwn.Maximum == 2)
-                            {
-                                CANTransmitter.Transmitter(
-                                    CANInterface: INTERFACE[(canData[CANTransmitterClass.num].CAN_Channel_ID) - 1],
-                                    whichCAN: canData[CANTransmitterClass.num].CAN_Channel_ID);
-                            }
-                            else if (numOfChanUpnDwn.Maximum == 1) {
-
-                                    CANTransmitter.Transmitter(
-                                    CANInterface: INTERFACE[0],
-                                    whichCAN: 1);
-                            }
-                        }
-
+                        if (!isStarted)                     return;
                     }
 
-                    break;
-            }
-        }
-              
+                    if (!isStarted)                         return;
 
-        //background method that is run on a different thread 
-        private void BackgroundFuncToTransmitLog()
-        {
+                    progressIndex[0] =                      parentIndex;
+                    progressIndex[1] =                      i;
 
-            //while transmission is ongoing continue transmission
-            while (play) ReadLogTransmitEnable(); 
-        }
+                    DataParameters dataToTransmit =         CAN_INFO[parentIndex][i];
+                    TimeSpan transmitTimeSpan =             TimeSpan.FromSeconds(dataToTransmit.Message_Time);
+                    transmissionTime =                      startTime.Add(transmitTimeSpan);
 
-        //invoke the ui thread and update the progressbar every second
-        private void ProgressBarTimer_Tick(object sender, EventArgs e)
-        {
-            this.BeginInvoke((Action) delegate()
-            {
+                    while (DateTime.Now  < transmissionTime)
+                    {
 
-                //update relevant parameters for user to monitor transmission progress
-                if (CANTransmitterClass.num <= canData.Count)
-                {
-                    
-                    progressBar.Value = (int) (((decimal)CANTransmitterClass.num / canData.Count) * 100);
-                    progressLabel.Text = string.Format("Processing ... {0}%", progressBar.Value);
-                    progressBar.Update();
+                        if (!isStarted)                     return;
+                    }
+
+                    CANTransmitterClass.Transmitter(data: dataToTransmit, dataToTransmit.CAN_Channel_ID);
+
+                    if (CAN_INFO[parentIndex].Count == (i + 1)) {
+
+                        Task.Delay(5000).GetAwaiter().GetResult();
+                        taskCompleted[parentIndex] = true;
+                    }                  
+
                 }
-
             });
+        };
 
+        private async void BackgroundFuncToTransmitLog()
+        {
+            List<Task> CAN_Trasmit_Tasks =                  new List<Task>();
+
+            for (int i = 0; i < numOfChan; i++) {
+
+                int it =                                    i;
+                CAN_Trasmit_Tasks.Add(Task.Run( parentTransmitDelegate(it)));
+            }
+
+            await Task.WhenAll(CAN_Trasmit_Tasks);
         }
 
-        private void SetButton_Click(object sender, EventArgs e)
+        private void CAN_Channel_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (play)
-            {
-                StopButton_Click(this, EventArgs.Empty);
-                DialogResult result = MessageBox.Show("You just changed the Baudrate or Interface, " +
-                                                      "Transmission will stop now " +
-                                                      "You will have to restart the application",
-                                                      "Fatal Error", MessageBoxButtons.OKCancel,
-                                                       MessageBoxIcon.Error);
+            if(isStarted)                                   StopButton_Click(this, EventArgs.Empty);
 
-                this.Close();
-            }
+            if(CANTransmitterClass.CanInit)                 CANTransmitterClass.Close();
+        }
 
-            //populate the selected interface
-            if (numOfChanUpnDwn.Value == 1)
-            {
-
-                BAUDRATE[0] = baudRateComboBox.SelectedIndex;
-                INTERFACE[0] = InterfaceComboBox.SelectedIndex;
-            }
-
-            if (numOfChanUpnDwn.Value == 2)
-            {
-
-                BAUDRATE[1] = baudRateComboBox.SelectedIndex;
-                INTERFACE[1] = InterfaceComboBox.SelectedIndex;
-            }
-
-            if (numOfChanUpnDwn.Maximum == 1 && !(BAUDRATE[0] == -1 || INTERFACE[0] == -1)) startButton.Enabled = true;
-            else if (!(BAUDRATE[1] == -1 || INTERFACE[1] == -1) && !(BAUDRATE[0] == -1 || INTERFACE[0] == -1)) {
-                startButton.Enabled = true;
-            }
+        private void canChanNum_ValueChanged(object sender, EventArgs e)
+        {
+            DirText.Clear();
         }
     }
 }

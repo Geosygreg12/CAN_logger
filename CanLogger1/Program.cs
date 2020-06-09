@@ -17,7 +17,6 @@ namespace CanLogger1
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new SetUp());
-            //Application.Run(new CAN_Channel());
         }
     }
 }

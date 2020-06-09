@@ -5,274 +5,217 @@ namespace CanLogger1
 {
     public class CANTransmitterClass
     {
-        Canlib.canStatus status;
+        static Canlib.canStatus status;
 
-        int numOfPeakChannels = 0;
-        int numOfKvaserChannels = 0;
-        public static bool isKvaserInitialised = false;
-        public static bool isPeakInitialiased = false;
+        static int[] canHandle =                            new int[2];
 
-        int[] canHandle = new int[2];
-        ushort[] peakHandle = new ushort[2];
-        TPCANBaudrate[] pCANBaudrate = new TPCANBaudrate[2]{ 0, 0};
-        TPCANMsg pCANMsg;
-        TPCANStatus pCANStatus;
+        static TPCANBaudrate[] pCANBaudrate =               new TPCANBaudrate[2]{ 0, 0};
+        static TPCANMsg pCANMsg;
+        static TPCANStatus pCANStatus;
 
-        enum CAN_Interface { 
-            
-            Kvaser,
-            Peak
-        }
+        static bool KvaserInit =                            false;
+        public static bool CanInit =                        false;
 
-        public CAN_Channel Form_1 { get; set; }
-
+        static int numOfKvaser =                            0;
+        static int numOfPeak =                              0;
+        
         public CANTransmitterClass() {}
 
+
         //initialise the usb interface library based on which interface was selected
-        public void Initialise(int CANInterface = 0, int baudrate = 0)
+        public static void initialiseCAN()
         {
 
-            switch (CANInterface)
-            {
+            for (int i = 0; i < CAN_Channel.numOfChan; i++) {
 
-                //0 means kvaser was selected
-                case (int) CAN_Interface.Kvaser:
+                switch (CAN_Channel._INTERFACEs[i]) {
 
-                    Canlib.canInitializeLibrary();
-
-                    //get the handle to the open channel
-                    canHandle[numOfKvaserChannels] = Canlib.canOpenChannel(numOfKvaserChannels, Canlib.canOPEN_ACCEPT_VIRTUAL);
-
-                    //check whether handle was gotten successfully
-                    ErrorControl(handle: canHandle[CANInterface], location: "canOpenChannel: initialise()");
-                    
-                    //set the relevant can bus parameters
-                    switch (baudrate)
-                    {
-                        case 0:
-                            status = Canlib.canSetBusParams(canHandle[numOfKvaserChannels], Canlib.canBITRATE_250K, 0, 0, 0, 0, 0);
-                            break;
-
-                        case 1:
-                            status = Canlib.canSetBusParams(canHandle[numOfKvaserChannels], Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
-                            break;
-
-                        default:
-                            status = Canlib.canSetBusParams(canHandle[numOfKvaserChannels], Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
-                            break;
-                    }
+                    case CAN_Channel.CAN_INTERFACE.KVASER:
 
 
-                    
+                        if (!KvaserInit)                    Canlib.canInitializeLibrary();
 
-                    ErrorControl(status: this.status, location: "canSetBusParams: initialise()");
-                    Canlib.canSetBusOutputControl(canHandle[numOfKvaserChannels], Canlib.canDRIVER_NORMAL);
+                        if (CanInit)                        Close();
 
-                    //turn the bus on with a handle to the open channel to write data
-                    Canlib.canBusOn(canHandle[numOfKvaserChannels]);
+                        numOfKvaser++;
 
-                    numOfKvaserChannels++;
-                    isKvaserInitialised = true;
-                    break;
+                        canHandle[i] =                      Canlib.canOpenChannel(numOfKvaser - 1, Canlib.canOPEN_ACCEPT_VIRTUAL); 
+                        KvaserInit =                        true;
 
-                //1 means peak can was selected
-                case (int)CAN_Interface.Peak:
+                        //check whether handle was gotten successfully
+                        ErrorControl(handle: canHandle[i], location: "canOpenChannel: initialise()");
 
-                    if (numOfPeakChannels == 1)
-                    {
-                        peakHandle[numOfPeakChannels] = PCANBasic.PCAN_USBBUS2;
-                    }
-                    else peakHandle[numOfPeakChannels] = PCANBasic.PCAN_USBBUS1;
-
-                    switch (baudrate) {
-                        case 0: pCANBaudrate[numOfPeakChannels] = TPCANBaudrate.PCAN_BAUD_250K;
-                            break;
-
-                        case 1: pCANBaudrate[numOfPeakChannels] = TPCANBaudrate.PCAN_BAUD_500K;
-                            break;
-
-                        default: pCANBaudrate[numOfPeakChannels] = TPCANBaudrate.PCAN_BAUD_500K;
-                            break;
-                    }
-                    
-
-                    if (PCANBasic.Initialize(peakHandle[numOfPeakChannels], pCANBaudrate[numOfPeakChannels]) == TPCANStatus.PCAN_ERROR_INITIALIZE)
-                    {
-                        ErrorControl(-1, location: "PCANBasic.initialize: initialise()");
-                        return;
-                    }
-
-                    numOfPeakChannels++;
-                    isPeakInitialiased = true;
-                    break;
-            }
-        }
-
-        //index for current message to transmit
-        public static int num = 0; 
-
-        public void Transmitter(int CANInterface, int whichCAN )
-        {
-            switch (CANInterface)
-            {
-                case (int) CAN_Interface.Kvaser:
-
-                    if (Form_1.GetData.Count > num)
-                    {
-                        //write data to the can bus
-                        switch (Form_1.GetData[num].Extended)
+                        switch (CAN_Channel._BAUDRATEs[i])
                         {
 
-                            case true:
+                            case CAN_Channel.CAN_BAUDRATE._250K:
 
-                                if ((whichCAN == 2) && (numOfKvaserChannels == 2))
-                                {
-
-                                    Canlib.canWrite(canHandle[1], Convert.ToInt32(Form_1.GetData[num].Message_ID, 16),
-                                    Form_1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
-                                }
-                                else {
-
-                                    Canlib.canWrite(canHandle[0], Convert.ToInt32(Form_1.GetData[num].Message_ID, 16),
-                                    Form_1.GetData[num].CAN_Message, 8, Canlib.canMSG_EXT);
-
-                                }
+                                status =                    Canlib.canSetBusParams(canHandle[i], Canlib.canBITRATE_250K, 0, 0, 0, 0, 0);
 
                                 break;
 
-                            case false:
+                            case CAN_Channel.CAN_BAUDRATE._500K:
 
-
-                                if ((whichCAN == 2) && (numOfKvaserChannels == 2))
-                                {
-                                    Canlib.canWrite(canHandle[1], Convert.ToInt32(Form_1.GetData[num].Message_ID, 16),
-                                    Form_1.GetData[num].CAN_Message, 8, 0);
-                                }
-                                else
-                                {
-                                    Canlib.canWrite(canHandle[0], Convert.ToInt32(Form_1.GetData[num].Message_ID, 16),
-                                    Form_1.GetData[num].CAN_Message, 8, 0);
-                                }
+                                status =                    Canlib.canSetBusParams(canHandle[i], Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
 
                                 break;
                         }
 
-                    }
-                    else return;   
-                    
-                    break;
+                        ErrorControl(status: status, location: "canSetBusParams: initialise()");
+                        Canlib.canSetBusOutputControl(canHandle[i], Canlib.canDRIVER_NORMAL);
 
-                case (int) CAN_Interface.Peak:
+                        //turn the bus on with a handle to the open channel to write data
+                        Canlib.canBusOn(canHandle[i]);
 
-                    if (Form_1.GetData.Count > num)
-                    {
-                        switch (Form_1.GetData[num].Extended) 
+                        numOfKvaser =                       0;
+                        break;
+
+                    case CAN_Channel.CAN_INTERFACE.PEAK:
+
+                        if (CanInit)                        Close();
+
+                        numOfPeak++;
+
+                        if (numOfPeak == 1)                 canHandle[i] = PCANBasic.PCAN_USBBUS1;
+                        if (numOfPeak == 2)                 canHandle[i] = PCANBasic.PCAN_USBBUS2;
+
+                        switch (CAN_Channel._BAUDRATEs[i])
                         {
 
-                            case true:
+                            case CAN_Channel.CAN_BAUDRATE._250K:
 
-                                pCANMsg.MSGTYPE = TPCANMessageType.PCAN_MESSAGE_EXTENDED; 
-                                goto default; 
-
-                            case false: 
-                                
-                                pCANMsg.MSGTYPE = TPCANMessageType.PCAN_MESSAGE_STANDARD;
-                                goto default;
-
-                            default:
-                                pCANMsg.DATA = Form_1.GetData[num].CAN_Message;
-                                pCANMsg.ID = Convert.ToUInt32(Form_1.GetData[num].Message_ID, 16);
-                                pCANMsg.LEN = Convert.ToByte(Form_1.GetData[num].Message_Length);
-
-                                if (whichCAN == 2 && numOfPeakChannels == 2)
-                                {
-
-                                    pCANStatus = PCANBasic.Write(peakHandle[1], ref pCANMsg);
-                                }
-                                else {
-
-                                    pCANStatus = PCANBasic.Write(peakHandle[0], ref pCANMsg);
-                                }
-                                
+                                pCANBaudrate[numOfPeak - 1] = TPCANBaudrate.PCAN_BAUD_250K;
 
                                 break;
-                        
-                        } 
+
+                            case CAN_Channel.CAN_BAUDRATE._500K:
+
+                                pCANBaudrate[numOfPeak - 1] = TPCANBaudrate.PCAN_BAUD_500K;
+
+                                break;
+                        }
+
+
+                        if (PCANBasic.Initialize((ushort)canHandle[i], pCANBaudrate[numOfPeak - 1]) == TPCANStatus.PCAN_ERROR_INITIALIZE)
+                        {
+                            ErrorControl(-1, location: "PCANBasic.initialize: initialise()");
+                            return;
+                        }
+
+
+                        numOfPeak =                         0;
+                        break;
+
+
+                }
+
+                
+            }
+
+            CanInit =                                       true;
+        }
+
+
+
+        
+        public static void Transmitter(CAN_Channel.DataParameters data, int CAN_ID = 1 )
+        {
+            switch (CAN_Channel._INTERFACEs[CAN_ID - 1]) {
+
+                case CAN_Channel.CAN_INTERFACE.KVASER:
+
+                    //write data to the can bus
+                    switch (data.Extended)
+                    {
+                        case true:
+
+                            Canlib.canWrite(canHandle[CAN_ID - 1], Convert.ToInt32(data.Message_ID, 16),
+                                data.CAN_Message, 8, Canlib.canMSG_EXT);
+
+                            break;
+
+                        case false:
+
+                            Canlib.canWrite(canHandle[CAN_ID - 1], Convert.ToInt32(data.Message_ID, 16),
+                            data.CAN_Message, 8, 0);
+
+                            break;
                     }
-                    else return;
+
+
+                    break;
+
+                case CAN_Channel.CAN_INTERFACE.PEAK:
+
+
+                    switch (data.Extended)
+                    {
+
+                        case true:
+
+                            pCANMsg.MSGTYPE = TPCANMessageType.PCAN_MESSAGE_EXTENDED;
+                            goto default;
+
+                        case false:
+
+                            pCANMsg.MSGTYPE = TPCANMessageType.PCAN_MESSAGE_STANDARD;
+                            goto default;
+
+                        default:
+                            pCANMsg.DATA = data.CAN_Message;
+                            pCANMsg.ID = Convert.ToUInt32(data.Message_ID, 16);
+                            pCANMsg.LEN = Convert.ToByte(data.Message_Length);
+
+                            pCANStatus = PCANBasic.Write((ushort)canHandle[CAN_ID - 1], ref pCANMsg);
+
+                            break;
+
+                    }
 
                     //report any failure to the developer
-                    if (pCANStatus < 0) 
+                    if (pCANStatus < 0)
                     {
                         Console.WriteLine("Writing file failed,  can status: " + pCANStatus +
-                                           "\nThe message time is: " + Form_1.GetData[num].Message_Time +
-                                           "\nThe message ID is: " + Form_1.GetData[num].Message_ID);
+                                           "\nThe message time is: " + data.Message_Time +
+                                           "\nThe message ID is: " + data.Message_ID);
                     }
 
                     break;
+            
             }
-
-            num++;
         }
 
         //close the can bus after transmission
-        public void Close(int[] CANInterface)
+        public static void Close()
         {
-            numOfKvaserChannels = 0;
-            numOfPeakChannels = 0;
 
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < CAN_Channel.numOfChan; i++)
+            {
 
+                switch (CAN_Channel._INTERFACEs[i]) {
 
-                switch (CANInterface[i])
-                {
-                    case (int) CAN_Interface.Kvaser:
+                    case CAN_Channel.CAN_INTERFACE.KVASER:
 
-                        if (numOfKvaserChannels > 1)
-                        {
+                        Canlib.canBusOff(canHandle[i]);
+                        status = Canlib.canClose(canHandle[i]);
+                        canHandle[i] = 0;
+                        KvaserInit = false;
 
-                            Canlib.canBusOff(canHandle[i]);
-                            status = Canlib.canClose(canHandle[i]);
-                            canHandle[i] = 0;
-                        }
-                        else {
-
-
-                            Canlib.canBusOff(canHandle[0]);
-                            status = Canlib.canClose(canHandle[0]);
-                            canHandle[0] = 0;
-                        }
-                        
-
-                        //check if bus closed successfully
-
-                        ErrorControl(status: this.status, location: "canClose: Close()");
-                        isKvaserInitialised = false;
-
+                        ErrorControl(status: status, location: "canClose: Close()");
                         break;
 
-                    case (int) CAN_Interface.Peak :
+                    case CAN_Channel.CAN_INTERFACE.PEAK:
 
-                        if (numOfPeakChannels > 1)
-                        {
-
-                            PCANBasic.Uninitialize(peakHandle[i]);
-                        }
-                        else {
-                            PCANBasic.Uninitialize(peakHandle[0]);
-                        }
-                        
-                        isPeakInitialiased = false;
+                        PCANBasic.Uninitialize((ushort) canHandle[i]);
 
                         break;
                 }
-
             }
 
-
+            CanInit = false;
         }
 
-        private void ErrorControl(int handle = 1, Canlib.canStatus status = Canlib.canStatus.canOK, string location = "\0")
+        static private void ErrorControl(int handle = 1, Canlib.canStatus status = Canlib.canStatus.canOK, string location = "\0")
         {
             if (handle < 0)
             {
@@ -284,9 +227,7 @@ namespace CanLogger1
                 Console.WriteLine("Handle error: " + msg + " \nThe location is: " + location);
 
                 //close this interface
-                Close(Form_1.GetInterface);
-                Form_1.Close();
-
+                Close();
             }
 
             if (status != Canlib.canStatus.canOK)

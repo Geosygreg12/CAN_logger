@@ -11,64 +11,55 @@ namespace CanLogger1
 {
     public partial class SetUp : Form
     {
-        CAN_Channel[] channels = new CAN_Channel[2];
-        //Timer timer = new Timer();
+        CAN_Channel channel;
+
+
+
         public SetUp()
         {
             InitializeComponent();
-            this.FormClosing += SetUp_FormClosing;
-           
-            //timer.Interval = 100;
-            //timer.Tick += checkIsDisposed;
+            this.FormClosing +=                         SetUp_FormClosing;
         }
 
-        private void checkIsDisposed(object sender, EventArgs e)
-        {
-            if (channels[0].IsDisposed && channels[1].IsDisposed) {
-                this.Close();
-            }
-        }
 
-        private void SetUp_FormClosing(object sender, FormClosingEventArgs e)
+        private void Continue_Button(object sender, EventArgs e)
         {
-            
-            foreach (CAN_Channel ch in channels) {
-                if( ch != null )
-                    ch.Close();
-            }
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            int numChan = 0;
+            int numChan =                               0;
             this.Hide();
-            int num = (int) numberOfCANChannels.Value;
+            int num =                                   (int) numberOfCANChannels.Value;
 
             switch (num) {
 
                 case 1:
-                    if(numChan == 0) numChan = 1;
+                    
+                    numChan =                           1;
 
-                    using (channels[0] = new CAN_Channel(numChan)) {
-                        channels[0].ShowDialog();
+                    goto                                default;
+
+                case 2:
+
+                    numChan =                           2;
+
+                    goto                                default;
+
+                default:
+
+                    using (channel = new CAN_Channel(numChan))
+                    {
+                        channel.ShowDialog();
                         this.Close();
                     }
-                    
 
                     break;
-                case 2:
-                    numChan = 2;
-                    //for (int i = 0; i < channels.Length; i++)
-                    //{
-                    //    channels[i] = new CAN_Channel(i + 1);
-                    //    channels[i].Show();
-                    //}
-                    // timer.Enabled = true;
-                    // timer.Start();
-
-                    goto case 1;
-                    
             }
         }
+
+
+        private void SetUp_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (channel != null)                        channel.Close();
+
+        }
+
     }
 }
