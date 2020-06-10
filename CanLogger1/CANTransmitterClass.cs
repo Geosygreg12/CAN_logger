@@ -59,6 +59,11 @@ namespace CanLogger1
                                 status =                    Canlib.canSetBusParams(canHandle[i], Canlib.canBITRATE_500K, 0, 0, 0, 0, 0);
 
                                 break;
+
+                            case CAN_Channel.CAN_BAUDRATE._1M:
+
+                                status = Canlib.canSetBusParams(canHandle[i], Canlib.canBITRATE_1M, 0, 0, 0, 0, 0);
+                                break;
                         }
 
                         ErrorControl(status: status, location: "canSetBusParams: initialise()");
@@ -66,8 +71,7 @@ namespace CanLogger1
 
                         //turn the bus on with a handle to the open channel to write data
                         Canlib.canBusOn(canHandle[i]);
-
-                        numOfKvaser =                       0;
+                                                
                         break;
 
                     case CAN_Channel.CAN_INTERFACE.PEAK:
@@ -93,6 +97,11 @@ namespace CanLogger1
                                 pCANBaudrate[numOfPeak - 1] = TPCANBaudrate.PCAN_BAUD_500K;
 
                                 break;
+
+                            case CAN_Channel.CAN_BAUDRATE._1M:
+
+                                pCANBaudrate[numOfPeak - 1] = TPCANBaudrate.PCAN_BAUD_1M;
+                                break;
                         }
 
 
@@ -102,8 +111,7 @@ namespace CanLogger1
                             return;
                         }
 
-
-                        numOfPeak =                         0;
+                                                
                         break;
 
 
@@ -113,6 +121,8 @@ namespace CanLogger1
             }
 
             CanInit =                                       true;
+            numOfPeak =                                     0;
+            numOfKvaser =                                   0;
         }
 
 

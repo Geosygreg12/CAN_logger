@@ -197,7 +197,8 @@ namespace CanLogger1
         {
 
             _250K,
-            _500K
+            _500K,
+            _1M
         }
 
 
@@ -229,6 +230,11 @@ namespace CanLogger1
 
                     _BAUDRATEs[channelIndex] =              CAN_BAUDRATE._250K;
                     break;
+
+                case 2:
+                    _BAUDRATEs[channelIndex] =              CAN_BAUDRATE._1M;
+                    break;
+
                 case 1:
 
                 default:

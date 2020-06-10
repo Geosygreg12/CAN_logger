@@ -163,7 +163,8 @@ namespace CanLogger1
             this.baudRateComboBox.FormattingEnabled = true;
             this.baudRateComboBox.Items.AddRange(new object[] {
             "250K",
-            "500K"});
+            "500K",
+            "1M"});
             this.baudRateComboBox.Location = new System.Drawing.Point(164, 58);
             this.baudRateComboBox.Margin = new System.Windows.Forms.Padding(2);
             this.baudRateComboBox.Name = "baudRateComboBox";
